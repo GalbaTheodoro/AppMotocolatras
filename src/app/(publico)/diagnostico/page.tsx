@@ -1,5 +1,5 @@
 import pg from "pg";
-import { configConexao } from "@/lib/db";
+import { configConexao, urlBanco } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -24,13 +24,14 @@ function explicarErro(e: unknown): string {
 
 export default async function Diagnostico() {
   const itens: Item[] = [];
-  const url = process.env.DATABASE_URL;
-  const secret = process.env.AUTH_SECRET;
+  const banco = urlBanco();
+  const url = banco?.url;
+  const secret = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET;
 
   itens.push({
     ok: !!url,
     titulo: "Variável DATABASE_URL",
-    detalhe: url ? "Configurada." : "NÃO configurada. Na Vercel: Settings > Environment Variables > adicione DATABASE_URL e faça Redeploy.",
+    detalhe: url ? (banco!.origem === "DATABASE_URL" ? "Configurada." : `Usando ${banco!.origem} (criada pela integração Supabase).`) : "NÃO configurada. Na Vercel: Settings > Environment Variables > adicione DATABASE_URL e faça Redeploy.",
   });
   if (url) {
     let resumo = "";
@@ -50,7 +51,8 @@ export default async function Diagnostico() {
     ok: !!secret && secret.length >= 16,
     titulo: "Variável AUTH_SECRET",
     detalhe: !secret ? "NÃO configurada. Adicione AUTH_SECRET (frase com 16+ caracteres) e faça Redeploy."
-      : secret.length < 16 ? `Muito curta (${secret.length} caracteres). Use pelo menos 16.` : "Configurada.",
+      : secret.length < 16 ? `Muito curta (${secret.length} caracteres). Use pelo menos 16.`
+      : process.env.AUTH_SECRET ? "Configurada." : "Usando SUPABASE_JWT_SECRET (criada pela integração Supabase).",
   });
 
   let temUsuarios = false;
