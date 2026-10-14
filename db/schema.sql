@@ -1,4 +1,4 @@
--- Motocólatras - estrutura do banco (PostgreSQL / Neon)
+-- Motocólatras - estrutura do banco (PostgreSQL / Supabase)
 -- Pode ser executado mais de uma vez com segurança.
 
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -74,3 +74,13 @@ INSERT INTO configuracoes (chave, valor) VALUES
   ('meses_gratis', '3'),
   ('dias_tolerancia', '5')
 ON CONFLICT (chave) DO NOTHING;
+
+-- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
+-- API pública do Supabase (chave anon). O sistema conecta direto como dono das
+-- tabelas e por isso continua com acesso normal.
+ALTER TABLE usuarios      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pessoas       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipamentos  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE emprestimos   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mensalidades  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
