@@ -6,7 +6,7 @@ import { queryOne } from "./db";
 const COOKIE = "moto_sessao";
 const DURACAO_DIAS = 7;
 
-export type Usuario = { id: number; nome: string; email: string; papel: "admin" | "operador" };
+export type Usuario = { id: number; nome: string; email: string; papel: "admin" | "operador" | "integrante" };
 
 function chave() {
   // AUTH_SECRET; na falta dela, usa o segredo que a integração Supabase da Vercel cria
@@ -49,10 +49,22 @@ export async function usuarioAtual(): Promise<Usuario | null> {
   }
 }
 
-export async function exigirUsuario() {
+/** Qualquer pessoa logada (equipe ou integrante) */
+export async function exigirLogado() {
   const u = await usuarioAtual();
   if (!u) redirect("/login");
   return u;
+}
+
+/** Equipe (administrador ou operador). Integrantes vão para a agenda da sede. */
+export async function exigirUsuario() {
+  const u = await exigirLogado();
+  if (u.papel === "integrante") redirect("/sede");
+  return u;
+}
+
+export function ehEquipe(u: { papel: string } | null | undefined) {
+  return !!u && (u.papel === "admin" || u.papel === "operador");
 }
 
 export async function exigirAdmin() {

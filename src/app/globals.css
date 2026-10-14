@@ -197,3 +197,31 @@ th { background: var(--side); color: var(--brand); }
 .item .nome { overflow-wrap: break-word; }
 .item.escolhido { flex-wrap: wrap; row-gap: 8px; }
 .item.escolhido > div:first-child { flex: 1 1 170px; }
+
+/* ===== Agenda da sede ===== */
+.cal-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-sem { text-align: center; font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; padding: 4px 0; }
+.cal-dia { min-height: 74px; border-radius: 8px; border: 1px solid var(--border); padding: 6px; display: flex; flex-direction: column; gap: 3px;
+  text-decoration: none !important; color: var(--text); background: #fff; transition: transform .08s; }
+.cal-dia:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+.cal-dia .num { font-weight: 700; font-size: .95rem; }
+.cal-dia .quem { font-size: .72rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-dia.livre { background: #f3faf4; border-color: #cfe8d4; }
+.cal-dia .livre-txt { color: var(--ok); }
+.cal-dia.reservado { background: var(--side); color: var(--brand); border-color: var(--side); }
+.cal-dia.minha { background: var(--brand); color: var(--brand-ink); border-color: #c9c710; }
+.cal-dia.passado { opacity: .5; }
+.cal-dia.passado.livre { background: #f1f1ee; border-color: var(--border); }
+.cal-dia.hoje { outline: 2px solid var(--red); outline-offset: 1px; }
+.cal-dia.sel { box-shadow: 0 0 0 3px #f6f59a; }
+.vazio-dia { border: 0; background: none; min-height: 0; }
+.cal-legenda { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: .82rem; color: var(--muted); }
+.cal-legenda .lg { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; border: 1px solid var(--border); }
+.lg.livre { background: #f3faf4; } .lg.reservado { background: var(--side); } .lg.minha { background: var(--brand); } .lg.hoje { border: 2px solid var(--red); }
+@media (max-width: 620px) {
+  .cal { gap: 3px; }
+  .cal-dia { min-height: 54px; padding: 4px 3px; }
+  .cal-dia .quem { font-size: .62rem; }
+  .cal-topo h2 { font-size: 1rem; }
+}

@@ -19,6 +19,9 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
        FROM (SELECT q.quantidade, q.status, ${EMPRESTADAS_SQL} emp FROM equipamentos q) t`
   );
   const solic = await queryOne<{ n: number }>("SELECT count(*)::int n FROM solicitacoes WHERE status='pendente'").catch(() => null);
+  const reservas = await query(
+    `SELECT id, data, responsavel, finalidade, valor, pagamento FROM reservas_sede
+      WHERE status='confirmada' AND data >= ${HOJE_SQL} ORDER BY data LIMIT 5`).catch(() => []);
   const pessoas = await queryOne<{ n: number }>("SELECT count(*)::int n FROM pessoas WHERE ativo");
   const sit = situacaoSql("m", cfg.dias_tolerancia);
   const fin = await queryOne<{ pend_n: number; pend_v: number; atr_n: number; atr_v: number; mes_v: number }>(
@@ -103,6 +106,25 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
                   <td>{c.pessoa}</td>
                   <td><Link href={`/emprestimos/${c.id}`}>{c.equipamento}</Link>{c.quantidade > 1 ? ` × ${c.quantidade}` : ""}</td>
                   <td><Tag tipo="gratis">{data(c.fim_gratis)}</Tag></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <h2>Próximas reservas da sede</h2>
+      <div className="tbl">
+        {reservas.length === 0 ? <div className="vazio">Nenhuma reserva futura. <Link href="/sede">Abrir agenda</Link></div> : (
+          <table>
+            <thead><tr><th>Data</th><th>Responsável</th><th>Finalidade</th><th className="r">Valor</th><th>Pagamento</th></tr></thead>
+            <tbody>
+              {reservas.map((r) => (
+                <tr key={r.id}>
+                  <td><Link href={`/sede?m=${r.data.slice(0, 7)}&d=${r.data}#dia`}>{data(r.data)}</Link></td>
+                  <td>{r.responsavel}</td><td>{r.finalidade ?? "—"}</td>
+                  <td className="r">{r.valor != null ? moeda(r.valor) : "—"}</td>
+                  <td><Tag tipo={r.pagamento === "pago" ? "pago" : "pendente"}>{r.pagamento === "pago" ? "Pago" : r.pagamento === "isento" ? "Isento" : "Pendente"}</Tag></td>
                 </tr>
               ))}
             </tbody>

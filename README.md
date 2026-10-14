@@ -59,6 +59,11 @@ npm run dev                  # http://localhost:3000
 - Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
 - No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
 
+## Agenda da sede
+- Menu **Agenda da sede**: calendário mensal; cada dia pode ter **uma reserva (dia inteiro)**.
+- Perfil **Integrante** (criado em Usuários): entra no sistema, vê só a agenda, reserva dias livres e cancela as próprias reservas futuras. Vê quem reservou os outros dias, mas não valores.
+- A equipe (admin/operador) vê tudo, reserva em nome de integrantes ou de outra pessoa, define o **valor** de cada reserva e marca **pago / pendente / isento**. O painel mostra as próximas reservas.
+
 ## Atualizar o banco
 Se o banco já existia, rode **de novo** o `db/schema.sql` no SQL Editor do Supabase. É seguro: só acrescenta o que falta, não apaga dados.
 

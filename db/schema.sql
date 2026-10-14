@@ -137,6 +137,30 @@ CREATE TABLE IF NOT EXISTS arquivos (
 CREATE INDEX IF NOT EXISTS arquivos_solicitacao ON arquivos (solicitacao_id);
 CREATE INDEX IF NOT EXISTS arquivos_pessoa ON arquivos (pessoa_id);
 
+-- ===== Versão 5: integrantes e agenda da sede =====
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone TEXT;
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_papel_check;
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_papel_check CHECK (papel IN ('admin','operador','integrante'));
+
+CREATE TABLE IF NOT EXISTS reservas_sede (
+  id             SERIAL PRIMARY KEY,
+  data           DATE NOT NULL,
+  usuario_id     INTEGER REFERENCES usuarios(id),   -- integrante que reservou (se tiver login)
+  responsavel    TEXT NOT NULL,                     -- nome de quem reservou
+  telefone       TEXT,
+  finalidade     TEXT,
+  valor          NUMERIC(10,2),                     -- definido pela equipe
+  pagamento      TEXT NOT NULL DEFAULT 'pendente' CHECK (pagamento IN ('pendente','pago','isento')),
+  pago_em        DATE,
+  status         TEXT NOT NULL DEFAULT 'confirmada' CHECK (status IN ('confirmada','cancelada')),
+  observacoes    TEXT,
+  criado_por     INTEGER REFERENCES usuarios(id),
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  cancelado_em   TIMESTAMPTZ
+);
+-- Só uma reserva ativa por dia
+CREATE UNIQUE INDEX IF NOT EXISTS reserva_sede_dia_unico ON reservas_sede (data) WHERE status = 'confirmada';
+
 -- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
 -- API pública do Supabase (chave anon). O sistema conecta direto como dono das
 -- tabelas e por isso continua com acesso normal.
@@ -150,3 +174,4 @@ ALTER TABLE devolucoes    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitacao_itens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arquivos      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reservas_sede ENABLE ROW LEVEL SECURITY;

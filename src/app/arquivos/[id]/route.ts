@@ -1,10 +1,10 @@
 import { queryOne } from "@/lib/db";
-import { usuarioAtual } from "@/lib/auth";
+import { usuarioAtual, ehEquipe } from "@/lib/auth";
 
 // Entrega o arquivo apenas para usuários logados da equipe
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const u = await usuarioAtual();
-  if (!u) return new Response("Não autorizado", { status: 401 });
+  if (!ehEquipe(u)) return new Response("Não autorizado", { status: 401 });
   const { id } = await params;
   const a = await queryOne<{ mime: string; nome: string | null; dados: Buffer }>(
     "SELECT mime, nome, dados FROM arquivos WHERE id=$1", [Number(id) || 0]);

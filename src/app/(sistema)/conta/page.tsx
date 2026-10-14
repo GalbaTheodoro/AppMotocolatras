@@ -1,9 +1,9 @@
-import { exigirUsuario } from "@/lib/auth";
+import { exigirLogado } from "@/lib/auth";
 import Mensagem from "@/components/Mensagem";
 import { trocarMinhaSenha } from "../usuarios/acoes";
 
 export default async function Conta({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
-  const u = await exigirUsuario();
+  const u = await exigirLogado();
   const sp = await searchParams;
   return (
     <>
