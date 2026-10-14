@@ -8,6 +8,7 @@ import { data, moeda, SITUACAO_MENS } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
+import Documentos from "@/components/Documentos";
 import FormPessoa from "../Formulario";
 import { salvarPessoa, excluirPessoa } from "../acoes";
 
@@ -50,6 +51,9 @@ export default async function EditarPessoa({
       </div>
       <Mensagem sp={sp} />
       <FormPessoa p={p} action={salvarPessoa} />
+
+      <h2>Documentos</h2>
+      <div className="card"><Documentos pessoaId={p.id} /></div>
 
       <h2>Empréstimos</h2>
       <div className="tbl">

@@ -7,6 +7,7 @@ import { data, hojeISO, moeda, STATUS_SOLIC } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
+import Documentos from "@/components/Documentos";
 import { aprovarSolicitacao, recusarSolicitacao } from "../acoes";
 
 export default async function Solicitacao({
@@ -56,6 +57,12 @@ export default async function Solicitacao({
           <dt>Endereço</dt><dd>{s.endereco ?? "—"}</dd>
           <dt>Observações</dt><dd>{s.observacoes ?? "—"}</dd>
         </dl>
+      </div>
+
+      <div className="card">
+        <h2>Documentos enviados</h2>
+        <Documentos solicitacaoId={s.id} />
+        <p className="sub" style={{ fontSize: ".82rem", marginBottom: 0 }}>Clique na imagem para abrir em tamanho real. Confira se o rosto confere com o documento.</p>
       </div>
 
       <div className="card">

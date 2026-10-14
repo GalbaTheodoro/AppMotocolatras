@@ -55,6 +55,8 @@ export async function aprovarSolicitacao(fd: FormData) {
         [i.equipamento_id, p.id, i.aprovar, inicio, `Solicitação ${s.protocolo}`, u.id]);
       await q("UPDATE solicitacao_itens SET quantidade_aprovada=$1, emprestimo_id=$2 WHERE id=$3", [i.aprovar, e.id, i.id]);
     }
+    // Os documentos passam a fazer parte do cadastro da pessoa
+    await q("UPDATE arquivos SET pessoa_id=$1 WHERE solicitacao_id=$2", [p.id, id]);
     await q(
       "UPDATE solicitacoes SET status='aprovada', resposta=$1, pessoa_id=$2, analisado_por=$3, analisado_em=now() WHERE id=$4",
       [resposta, p.id, u.id, id]);

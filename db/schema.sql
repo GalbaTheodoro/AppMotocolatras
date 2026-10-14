@@ -45,9 +45,6 @@ CREATE TABLE IF NOT EXISTS emprestimos (
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK (data_devolucao IS NULL OR data_devolucao >= data_inicio)
 );
--- Um equipamento só pode ter um empréstimo em aberto
-CREATE UNIQUE INDEX IF NOT EXISTS emprestimo_ativo_unico
-  ON emprestimos (equipamento_id) WHERE data_devolucao IS NULL;
 
 CREATE TABLE IF NOT EXISTS mensalidades (
   id                  SERIAL PRIMARY KEY,
@@ -96,6 +93,50 @@ CREATE TABLE IF NOT EXISTS devolucoes (
 );
 CREATE INDEX IF NOT EXISTS emprestimos_equip_ativos ON emprestimos (equipamento_id) WHERE data_devolucao IS NULL;
 
+-- ===== Versão 3: solicitações públicas de empréstimo =====
+CREATE TABLE IF NOT EXISTS solicitacoes (
+  id             SERIAL PRIMARY KEY,
+  protocolo      TEXT NOT NULL UNIQUE,
+  nome           TEXT NOT NULL,
+  cpf            TEXT NOT NULL,
+  telefone       TEXT NOT NULL,
+  email          TEXT,
+  endereco       TEXT,
+  observacoes    TEXT,
+  status         TEXT NOT NULL DEFAULT 'pendente'
+                 CHECK (status IN ('pendente','aprovada','recusada','cancelada')),
+  resposta       TEXT,
+  pessoa_id      INTEGER REFERENCES pessoas(id),
+  analisado_por  INTEGER REFERENCES usuarios(id),
+  analisado_em   TIMESTAMPTZ,
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS solicitacoes_status ON solicitacoes (status, criado_em);
+
+CREATE TABLE IF NOT EXISTS solicitacao_itens (
+  id                   SERIAL PRIMARY KEY,
+  solicitacao_id       INTEGER NOT NULL REFERENCES solicitacoes(id) ON DELETE CASCADE,
+  equipamento_id       INTEGER NOT NULL REFERENCES equipamentos(id),
+  quantidade           INTEGER NOT NULL CHECK (quantidade > 0),
+  quantidade_aprovada  INTEGER,
+  emprestimo_id        INTEGER REFERENCES emprestimos(id) ON DELETE SET NULL
+);
+
+-- ===== Versão 4: documentos (documento, foto de rosto, comprovante de endereço) =====
+CREATE TABLE IF NOT EXISTS arquivos (
+  id              SERIAL PRIMARY KEY,
+  solicitacao_id  INTEGER REFERENCES solicitacoes(id) ON DELETE CASCADE,
+  pessoa_id       INTEGER REFERENCES pessoas(id) ON DELETE CASCADE,
+  tipo            TEXT NOT NULL CHECK (tipo IN ('documento','rosto','endereco')),
+  nome            TEXT,
+  mime            TEXT NOT NULL,
+  tamanho         INTEGER NOT NULL,
+  dados           BYTEA NOT NULL,
+  criado_em       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS arquivos_solicitacao ON arquivos (solicitacao_id);
+CREATE INDEX IF NOT EXISTS arquivos_pessoa ON arquivos (pessoa_id);
+
 -- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
 -- API pública do Supabase (chave anon). O sistema conecta direto como dono das
 -- tabelas e por isso continua com acesso normal.
@@ -106,3 +147,6 @@ ALTER TABLE emprestimos   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mensalidades  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolucoes    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE solicitacoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE solicitacao_itens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arquivos      ENABLE ROW LEVEL SECURITY;

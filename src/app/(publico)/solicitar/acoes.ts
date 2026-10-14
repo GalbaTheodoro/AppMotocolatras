@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { randomInt } from "node:crypto";
 import { query, queryOne, transacao } from "@/lib/db";
 import { txt, comMsg, soDigitos, cpfValido, formatarCPF } from "@/lib/formato";
+import { TIPOS_ARQUIVO, MAX_ARQUIVO, MAX_TOTAL, detectarMime, type TipoArquivo } from "@/lib/arquivos";
 
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I
 
@@ -45,6 +46,24 @@ export async function enviarSolicitacao(fd: FormData) {
   const itensOk = itens.filter((i) => idsValidos.has(i.id));
   if (itensOk.length === 0) redirect(comMsg(volta, "erro", "Os equipamentos escolhidos não estão mais disponíveis"));
 
+  // Documentos obrigatórios
+  const arquivos: { tipo: TipoArquivo; nome: string; mime: string; dados: Buffer }[] = [];
+  let total = 0;
+  for (const tipo of Object.keys(TIPOS_ARQUIVO) as TipoArquivo[]) {
+    const f = fd.get(`arq_${tipo}`);
+    const rotulo = TIPOS_ARQUIVO[tipo];
+    if (!(f instanceof File) || f.size === 0) redirect(comMsg(volta, "erro", `Envie: ${rotulo}`));
+    if (f.size > MAX_ARQUIVO) redirect(comMsg(volta, "erro", `${rotulo}: arquivo muito grande (máx. 2,5 MB)`));
+    const dados = Buffer.from(await f.arrayBuffer());
+    const mime = detectarMime(dados);
+    if (!mime || (tipo === "rosto" && mime === "application/pdf")) {
+      redirect(comMsg(volta, "erro", `${rotulo}: formato não aceito. Envie ${tipo === "rosto" ? "uma foto" : "foto ou PDF"}.`));
+    }
+    total += f.size;
+    arquivos.push({ tipo, nome: f.name.slice(0, 120), mime, dados });
+  }
+  if (total > MAX_TOTAL) redirect(comMsg(volta, "erro", "Os arquivos juntos passaram de 4 MB. Envie fotos em vez de PDFs grandes."));
+
   const abertas = await queryOne<{ n: number }>(
     "SELECT count(*)::int n FROM solicitacoes WHERE regexp_replace(cpf,'\\D','','g') = $1 AND status = 'pendente'", [cpf]);
   if (abertas && abertas.n >= 3) {
@@ -60,6 +79,11 @@ export async function enviarSolicitacao(fd: FormData) {
         `INSERT INTO solicitacoes (protocolo, nome, cpf, telefone, email, endereco, observacoes)
          VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
         [p, nome, formatarCPF(cpf), telefone, email?.toLowerCase() ?? null, endereco, obs]);
+      for (const a of arquivos) {
+        await q(
+          "INSERT INTO arquivos (solicitacao_id, tipo, nome, mime, tamanho, dados) VALUES ($1,$2,$3,$4,$5,$6)",
+          [s.id, a.tipo, a.nome, a.mime, a.dados.length, a.dados]);
+      }
       for (const i of itensOk) {
         await q("INSERT INTO solicitacao_itens (solicitacao_id, equipamento_id, quantidade) VALUES ($1,$2,$3)", [s.id, i.id, i.qtd]);
       }

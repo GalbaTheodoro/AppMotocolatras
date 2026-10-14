@@ -55,6 +55,7 @@ npm run dev                  # http://localhost:3000
 
 ## Solicitações pelo público
 - Página pública **/solicitar**: a pessoa informa seus dados (CPF validado) e os equipamentos/quantidades que deseja. Recebe um **protocolo**.
+- A pessoa também envia **documento com foto (RG/CNH)**, **foto do rosto** e **comprovante de endereço** (foto ou PDF). As fotos são reduzidas no próprio celular antes do envio; os arquivos ficam guardados no banco e só a equipe logada consegue abrir. Ao aprovar, os documentos vão para o cadastro da pessoa.
 - Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
 - No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
 

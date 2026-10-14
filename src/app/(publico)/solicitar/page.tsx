@@ -4,6 +4,8 @@ import { lerConfig } from "@/lib/config";
 import { moeda } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
 import CabecaPublica from "@/components/CabecaPublica";
+import CampoArquivo from "@/components/CampoArquivo";
+import CampoCPF from "@/components/CampoCPF";
 import { enviarSolicitacao } from "./acoes";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +25,27 @@ export default async function Solicitar({ searchParams }: { searchParams: Promis
             <h2>Seus dados</h2>
             <div className="f" style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
               <label>Nome completo *<input name="nome" required /></label>
-              <label>CPF *<input name="cpf" inputMode="numeric" placeholder="000.000.000-00" required /></label>
+              <CampoCPF />
               <label>Telefone / WhatsApp *<input name="telefone" inputMode="tel" placeholder="(34) 99999-9999" required /></label>
               <label>E-mail<input name="email" type="email" /></label>
               <label className="full" style={{ gridColumn: "1 / -1" }}>Endereço<input name="endereco" /></label>
             </div>
             <div className="hp" aria-hidden="true"><label>Site<input name="site" tabIndex={-1} autoComplete="off" /></label></div>
+          </div>
+
+          <div className="card">
+            <h2>Documentos</h2>
+            <p className="sub" style={{ marginBottom: 12 }}>
+              Pode tirar foto pelo celular. As fotos são reduzidas automaticamente antes do envio.
+            </p>
+            <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <CampoArquivo name="arq_documento" rotulo="Documento com foto" dica="RG ou CNH — foto ou PDF" />
+              <CampoArquivo name="arq_rosto" rotulo="Foto do rosto" dica="Selfie com o rosto bem visível" somenteImagem camera="user" />
+              <CampoArquivo name="arq_endereco" rotulo="Comprovante de endereço" dica="Conta de luz, água, etc. — foto ou PDF" />
+            </div>
+            <p className="sub" style={{ fontSize: ".8rem", marginTop: 12, marginBottom: 0 }}>
+              Seus documentos são usados apenas para análise do cadastro pelo Motocólatras MC e ficam visíveis somente para a equipe.
+            </p>
           </div>
 
           <div className="card">
