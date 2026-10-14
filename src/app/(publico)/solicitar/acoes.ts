@@ -97,5 +97,10 @@ export async function enviarSolicitacao(fd: FormData) {
 export async function consultarSolicitacao(fd: FormData) {
   const protocolo = (txt(fd, "protocolo") ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const cpf = soDigitos(txt(fd, "cpf"));
-  redirect(`/acompanhar?p=${encodeURIComponent(protocolo)}&c=${encodeURIComponent(cpf)}`);
+  if (!protocolo && !cpf) redirect("/acompanhar?erro=" + encodeURIComponent("Informe o protocolo, o CPF ou os dois"));
+  if (cpf && !cpfValido(cpf)) redirect("/acompanhar?erro=" + encodeURIComponent("CPF inválido. Confira os números."));
+  const q = new URLSearchParams();
+  if (protocolo) q.set("p", protocolo);
+  if (cpf) q.set("c", cpf);
+  redirect(`/acompanhar?${q.toString()}`);
 }

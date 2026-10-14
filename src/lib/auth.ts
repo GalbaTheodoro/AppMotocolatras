@@ -9,7 +9,8 @@ const DURACAO_DIAS = 7;
 export type Usuario = { id: number; nome: string; email: string; papel: "admin" | "operador" };
 
 function chave() {
-  const s = process.env.AUTH_SECRET;
+  // AUTH_SECRET; na falta dela, usa o segredo que a integração Supabase da Vercel cria
+  const s = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET;
   if (!s || s.length < 16) throw new Error("AUTH_SECRET não configurada (mínimo 16 caracteres)");
   return new TextEncoder().encode(s);
 }

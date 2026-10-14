@@ -25,7 +25,7 @@ export function configConexao(url: string): pg.PoolConfig {
   }
   // remove parâmetros de SSL do texto (o SSL é configurado abaixo)
   connectionString = connectionString
-    .replace(/([?&])(sslmode|sslcert|sslkey|sslrootcert|pgbouncer|uselibpqcompat)=[^&]*/g, "$1")
+    .replace(/([?&])(sslmode|sslcert|sslkey|sslrootcert|pgbouncer|uselibpqcompat|supa)=[^&]*/g, "$1")
     .replace(/[?&]+$/, "")
     .replace(/\?&+/, "?")
     .replace(/&&+/g, "&");
@@ -36,11 +36,24 @@ export function configConexao(url: string): pg.PoolConfig {
   };
 }
 
+/**
+ * Endereço do banco: usa DATABASE_URL; se não existir, aproveita as variáveis que a
+ * integração Supabase da Vercel cria sozinha (POSTGRES_URL / POSTGRES_PRISMA_URL).
+ */
+export function urlBanco(): { url: string; origem: string } | null {
+  for (const nome of ["DATABASE_URL", "POSTGRES_URL", "POSTGRES_PRISMA_URL"]) {
+    const v = process.env[nome]?.trim();
+    if (v) return { url: v, origem: nome };
+  }
+  return null;
+}
+
 function getPool() {
   if (!globalForPool.pgPool) {
-    if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL não configurada");
+    const banco = urlBanco();
+    if (!banco) throw new Error("DATABASE_URL não configurada");
     globalForPool.pgPool = new Pool({
-      ...configConexao(process.env.DATABASE_URL),
+      ...configConexao(banco.url),
       max: 5,
       idleTimeoutMillis: 10_000,
     });
