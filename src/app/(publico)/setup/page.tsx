@@ -1,0 +1,29 @@
+import { redirect } from "next/navigation";
+import { queryOne } from "@/lib/db";
+import Mensagem from "@/components/Mensagem";
+import { criarPrimeiroAdmin } from "../acoes";
+
+export const dynamic = "force-dynamic";
+
+export default async function Setup({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
+  const temUsuario = await queryOne("SELECT 1 FROM usuarios LIMIT 1");
+  if (temUsuario) redirect("/login");
+  const sp = await searchParams;
+  return (
+    <div className="auth">
+      <div className="card">
+        <div className="logo">Moto<span>cólatras</span></div>
+        <p className="sub" style={{ textAlign: "center", marginBottom: 18 }}>
+          Primeiro acesso: crie o usuário administrador
+        </p>
+        <Mensagem sp={sp} />
+        <form action={criarPrimeiroAdmin}>
+          <label>Nome<input name="nome" required autoFocus /></label>
+          <label>E-mail<input name="email" type="email" required /></label>
+          <label>Senha<input name="senha" type="password" minLength={6} required /></label>
+          <button className="btn" type="submit">Criar administrador</button>
+        </form>
+      </div>
+    </div>
+  );
+}
