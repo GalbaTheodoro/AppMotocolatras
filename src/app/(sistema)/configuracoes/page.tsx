@@ -24,6 +24,18 @@ export default async function Configuracoes({ searchParams }: { searchParams: Pr
         <p className="full sub" style={{ fontSize: ".85rem" }}>
           Alterar o valor afeta apenas as mensalidades geradas daqui em diante. As já lançadas mantêm o valor original.
         </p>
+        <h2 className="full" style={{ marginTop: 10, marginBottom: 0 }}>Dados do clube no termo de empréstimo</h2>
+        <label>Nome do clube<input name="clube_nome" defaultValue={c.clube_nome} /></label>
+        <label>CNPJ / CPF do responsável (opcional)<input name="clube_documento" defaultValue={c.clube_documento} /></label>
+        <label>Endereço da sede<input name="clube_endereco" defaultValue={c.clube_endereco} /></label>
+        <label>Cidade (local e foro)<input name="clube_cidade" defaultValue={c.clube_cidade} /></label>
+        <label>Responsável que assina pelo clube<input name="clube_responsavel" defaultValue={c.clube_responsavel} placeholder="Nome do presidente / diretor" /></label>
+        <label>Prazo para devolver quando solicitado (dias)
+          <input name="termo_prazo_devolucao" type="number" min="0" step="1" defaultValue={c.termo_prazo_devolucao} />
+        </label>
+        <label className="full">Cláusulas extras (opcional — uma por linha, entram no fim do termo)
+          <textarea name="termo_clausulas_extras" defaultValue={c.termo_clausulas_extras} placeholder="Ex.: O equipamento deve ser usado apenas em eventos e passeios do clube." />
+        </label>
         <div className="full"><button className="btn" type="submit">Salvar</button></div>
       </form>
     </>

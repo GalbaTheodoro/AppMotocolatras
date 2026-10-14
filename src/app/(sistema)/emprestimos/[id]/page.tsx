@@ -48,12 +48,15 @@ export default async function Emprestimo({
             {e.data_devolucao ? e.quantidade_inicial : e.quantidade} unidade(s) emprestada(s) para <Link href={`/pessoas/${e.pessoa_id}`}>{e.pessoa}</Link>
           </p>
         </div>
+        <div className="acoes">
+        <Link className="btn" href={`/termo/emprestimo/${e.id}`}>🖨️ Imprimir termo</Link>
         {u?.papel === "admin" && (
           <form action={excluirEmprestimo}>
             <input type="hidden" name="id" value={e.id} />
             <BotaoConfirmar mensagem="Excluir este empréstimo e suas mensalidades? Use apenas para corrigir lançamentos errados.">Excluir</BotaoConfirmar>
           </form>
         )}
+        </div>
       </div>
       <Mensagem sp={sp} />
 

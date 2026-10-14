@@ -65,7 +65,7 @@ export async function aprovarSolicitacao(fd: FormData) {
   if ("erro" in r) redirect(comMsg(volta, "erro", r.erro as string));
   await gerarMensalidades();
   revalidatePath("/", "layout");
-  redirect(comMsg(volta, "ok", "Solicitação aprovada: pessoa cadastrada e empréstimos registrados"));
+  redirect(comMsg(volta, "ok", "Solicitação aprovada: pessoa cadastrada e empréstimos registrados. Imprima o termo de empréstimo para a pessoa assinar."));
 }
 
 export async function recusarSolicitacao(fd: FormData) {

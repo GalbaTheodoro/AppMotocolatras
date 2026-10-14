@@ -43,7 +43,12 @@ export default async function Solicitacao({
           <h1>Solicitação {s.protocolo}</h1>
           <p className="sub">Enviada em {data(s.criado_em)} · <Tag tipo={s.status}>{STATUS_SOLIC[s.status]}</Tag></p>
         </div>
-        <Link className="btn sec" href="/solicitacoes">Voltar</Link>
+        <div className="acoes">
+          {s.status === "aprovada" && (
+            <Link className="btn" href={`/termo/solicitacao/${s.id}`}>🖨️ Imprimir termo de empréstimo</Link>
+          )}
+          <Link className="btn sec" href="/solicitacoes">Voltar</Link>
+        </div>
       </div>
       <Mensagem sp={sp} />
 
