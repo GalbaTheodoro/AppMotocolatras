@@ -22,70 +22,101 @@ async function comprimir(file: File): Promise<File> {
     canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.82));
     if (!blob) return file;
-    const nome = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    const nome = (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg";
     return new File([blob], nome, { type: "image/jpeg" });
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
+/**
+ * Campo de documento com dois botões:
+ *  - "Tirar foto": abre a câmera do celular (frontal para selfie, traseira para documentos)
+ *  - "Escolher arquivo": galeria / arquivos (foto ou PDF)
+ * O arquivo final (já comprimido) vai no input "name" que é enviado no formulário.
+ */
 export default function CampoArquivo({
-  name, rotulo, dica, somenteImagem = false, camera,
+  name, rotulo, dica, somenteImagem = false, camera = "environment",
 }: { name: string; rotulo: string; dica?: string; somenteImagem?: boolean; camera?: "user" | "environment" }) {
-  const ref = useRef<HTMLInputElement>(null);
+  const real = useRef<HTMLInputElement>(null);
+  const cam = useRef<HTMLInputElement>(null);
+  const gal = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [info, setInfo] = useState<string>("");
-  const [erro, setErro] = useState<string>("");
+  const [info, setInfo] = useState("");
+  const [erro, setErro] = useState("");
   const [processando, setProcessando] = useState(false);
 
-  async function aoEscolher() {
-    const input = ref.current!;
-    const f = input.files?.[0];
-    setErro(""); setInfo(""); setPreview(null);
+  function definir(f: File | null) {
+    const dt = new DataTransfer();
+    if (f) dt.items.add(f);
+    real.current!.files = dt.files;
+    real.current!.setCustomValidity("");
+  }
+
+  async function aoEscolher(origem: HTMLInputElement) {
+    const f = origem.files?.[0];
+    origem.value = "";
     if (!f) return;
+    setErro("");
     if (f.type === "application/pdf") {
-      if (somenteImagem) { input.value = ""; setErro("Envie uma foto (não PDF)."); return; }
-      if (f.size > LIMITE_PDF) { input.value = ""; setErro("PDF muito grande (máx. 2,5 MB). Tire uma foto do documento."); return; }
-      setInfo(`PDF · ${(f.size / 1024).toFixed(0)} KB`);
+      if (somenteImagem) { setErro("Aqui precisa ser uma foto (não PDF)."); return; }
+      if (f.size > LIMITE_PDF) { setErro("PDF muito grande (máx. 2,5 MB). Tire uma foto do documento."); return; }
+      definir(f); setPreview(null); setInfo(`PDF · ${f.name} · ${(f.size / 1024).toFixed(0)} KB`);
       return;
     }
-    if (!f.type.startsWith("image/")) { input.value = ""; setErro("Formato não aceito. Envie foto ou PDF."); return; }
+    if (!f.type.startsWith("image/")) { setErro("Formato não aceito. Envie foto ou PDF."); return; }
     setProcessando(true);
     try {
       const menor = await comprimir(f);
-      const dt = new DataTransfer();
-      dt.items.add(menor);
-      input.files = dt.files;
+      definir(menor);
+      if (preview) URL.revokeObjectURL(preview);
       setPreview(URL.createObjectURL(menor));
-      setInfo(`Foto · ${(menor.size / 1024).toFixed(0)} KB`);
+      setInfo(`Foto pronta · ${(menor.size / 1024).toFixed(0)} KB`);
     } catch {
-      input.value = "";
-      setErro("Não foi possível ler esta imagem. Tente tirar a foto novamente (formato JPG ou PNG).");
+      setErro("Não foi possível ler esta imagem. Tente tirar a foto novamente.");
     } finally {
       setProcessando(false);
     }
   }
 
+  const temArquivo = !!info;
   return (
-    <label className="campo-arquivo">
-      {rotulo} *
-      {dica && <span className="sub" style={{ fontWeight: 400, fontSize: ".82rem" }}>{dica}</span>}
-      <input
-        ref={ref}
-        type="file"
-        name={name}
-        required
-        accept={somenteImagem ? "image/*" : "image/*,application/pdf"}
-        capture={camera}
-        onChange={aoEscolher}
-      />
-      {processando && <span className="sub" style={{ fontWeight: 400 }}>Preparando a foto…</span>}
+    <div className="campo-arquivo">
+      <div className="rotulo">{rotulo} *</div>
+      {dica && <div className="sub" style={{ fontSize: ".82rem" }}>{dica}</div>}
+
+      {/* Entradas escondidas que abrem a câmera ou a galeria */}
+      <input ref={cam} type="file" accept="image/*" capture={camera} hidden onChange={(e) => aoEscolher(e.currentTarget)} />
+      <input ref={gal} type="file" accept={somenteImagem ? "image/*" : "image/*,application/pdf"} hidden onChange={(e) => aoEscolher(e.currentTarget)} />
+
       {preview && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="" className="miniatura" />
       )}
-      {info && <span className="sub" style={{ fontWeight: 400, fontSize: ".8rem" }}>✓ {info}</span>}
-      {erro && <span style={{ color: "var(--err)", fontWeight: 500 }}>{erro}</span>}
-    </label>
+      {info && <div className="ok-arquivo">✓ {info}</div>}
+
+      <div className="botoes-arquivo">
+        <button type="button" className="btn peq" onClick={() => cam.current?.click()} disabled={processando}>
+          📷 {temArquivo ? "Tirar outra" : camera === "user" ? "Tirar selfie" : "Tirar foto"}
+        </button>
+        <button type="button" className="btn sec peq" onClick={() => gal.current?.click()} disabled={processando}>
+          📁 {somenteImagem ? "Escolher foto" : "Escolher arquivo"}
+        </button>
+      </div>
+
+      {processando && <div className="sub">Preparando a foto…</div>}
+      {erro && <div style={{ color: "var(--err)", fontWeight: 500 }}>{erro}</div>}
+
+      {/* Este é o campo enviado; fica invisível mas mantém a validação de "obrigatório" */}
+      <input
+        ref={real}
+        type="file"
+        name={name}
+        required
+        tabIndex={-1}
+        className="arquivo-real"
+        onInvalid={(e) => e.currentTarget.setCustomValidity(`Falta: ${rotulo}. Tire a foto ou escolha o arquivo.`)}
+      />
+    </div>
   );
 }

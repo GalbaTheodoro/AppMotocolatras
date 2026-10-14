@@ -165,7 +165,12 @@ th { background: var(--side); color: var(--brand); }
 .tag.recusada { background: var(--err-bg); color: var(--err); }
 
 /* ===== Documentos ===== */
-.campo-arquivo input[type=file] { padding: 8px; background: #fafaf7; }
+.campo-arquivo { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px dashed #cfd4dc; border-radius: 10px; background: #fafaf7; }
+.campo-arquivo .rotulo { font-size: .88rem; font-weight: 700; color: #3a4252; }
+.botoes-arquivo { display: flex; gap: 8px; flex-wrap: wrap; }
+.botoes-arquivo .btn { flex: 1 1 auto; justify-content: center; padding: 10px 12px; font-size: .9rem; }
+.ok-arquivo { color: var(--ok); font-size: .82rem; font-weight: 600; }
+.arquivo-real { position: absolute; left: 50%; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .miniatura { max-width: 160px; max-height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); margin-top: 4px; }
 .docs { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .doc { border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; background: #fafaf7; }

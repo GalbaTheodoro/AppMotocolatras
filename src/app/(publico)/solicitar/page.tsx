@@ -36,7 +36,7 @@ export default async function Solicitar({ searchParams }: { searchParams: Promis
           <div className="card">
             <h2>Documentos</h2>
             <p className="sub" style={{ marginBottom: 12 }}>
-              Pode tirar foto pelo celular. As fotos são reduzidas automaticamente antes do envio.
+              Pelo celular, toque em <b>Tirar foto</b> para abrir a câmera, ou escolha um arquivo já salvo. As fotos são reduzidas automaticamente antes do envio.
             </p>
             <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
               <CampoArquivo name="arq_documento" rotulo="Documento com foto" dica="RG ou CNH — foto ou PDF" />
