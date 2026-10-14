@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { queryOne } from "@/lib/db";
 import Mensagem from "@/components/Mensagem";
+import { LogoTopo } from "@/components/Marca";
 import { criarPrimeiroAdmin } from "../acoes";
 
 export const dynamic = "force-dynamic";
@@ -17,10 +18,8 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="auth">
       <div className="card">
-        <div className="logo">Moto<span>cólatras</span></div>
-        <p className="sub" style={{ textAlign: "center", marginBottom: 18 }}>
-          Primeiro acesso: crie o usuário administrador
-        </p>
+        <LogoTopo subtitulo="Primeiro acesso" />
+        <p className="sub" style={{ textAlign: "center", marginBottom: 14 }}>Crie o usuário administrador</p>
         <Mensagem sp={sp} />
         <form action={criarPrimeiroAdmin}>
           <label>Nome<input name="nome" required autoFocus /></label>

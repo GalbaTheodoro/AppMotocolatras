@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { queryOne } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
 import Mensagem from "@/components/Mensagem";
+import { LogoTopo } from "@/components/Marca";
 import { entrar } from "../acoes";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="auth">
       <div className="card">
-        <div className="logo">Moto<span>cólatras</span></div>
-        <p className="sub" style={{ textAlign: "center", marginBottom: 18 }}>Controle de empréstimos</p>
+        <LogoTopo subtitulo="Controle de empréstimos" />
         <Mensagem sp={sp} />
         <form action={entrar}>
           <label>E-mail<input name="email" type="email" required autoFocus /></label>

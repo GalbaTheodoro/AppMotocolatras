@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NavLink from "@/components/NavLink";
 import { exigirUsuario } from "@/lib/auth";
 import { sair } from "../(publico)/acoes";
 
@@ -9,26 +10,31 @@ export default async function SistemaLayout({ children }: { children: React.Reac
   return (
     <div className="shell">
       <aside className="side">
-        <div className="logo">Moto<span>cólatras</span></div>
+        <Link href="/" className="marca">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Motocólatras MC" />
+          <b>MOTOCÓLATRAS</b>
+          <small>Viciados em duas rodas</small>
+        </Link>
         <nav>
-          <Link href="/">Painel</Link>
+          <NavLink href="/">Painel</NavLink>
           <div className="sep">Cadastros</div>
-          <Link href="/equipamentos">Equipamentos</Link>
-          <Link href="/pessoas">Pessoas</Link>
+          <NavLink href="/equipamentos">Equipamentos</NavLink>
+          <NavLink href="/pessoas">Pessoas</NavLink>
           <div className="sep">Controle</div>
-          <Link href="/emprestimos">Empréstimos</Link>
-          <Link href="/mensalidades">Mensalidades</Link>
+          <NavLink href="/emprestimos">Empréstimos</NavLink>
+          <NavLink href="/mensalidades">Mensalidades</NavLink>
           {u.papel === "admin" && (
             <>
               <div className="sep">Administração</div>
-              <Link href="/usuarios">Usuários</Link>
-              <Link href="/configuracoes">Configurações</Link>
+              <NavLink href="/usuarios">Usuários</NavLink>
+              <NavLink href="/configuracoes">Configurações</NavLink>
             </>
           )}
         </nav>
         <div className="user">
           <b>{u.nome}</b>
-          {u.papel === "admin" ? "Administrador" : "Operador"} · <Link href="/conta">Minha conta</Link>
+          {u.papel === "admin" ? "Administrador" : "Operador"} · <NavLink href="/conta">Minha conta</NavLink>
           <form action={sair}>
             <button type="submit">Sair</button>
           </form>
