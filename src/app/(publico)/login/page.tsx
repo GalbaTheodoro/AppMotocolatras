@@ -7,8 +7,13 @@ import { entrar } from "../acoes";
 export const dynamic = "force-dynamic";
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ erro?: string; ok?: string }> }) {
-  if (await usuarioAtual()) redirect("/");
-  const temUsuario = await queryOne("SELECT 1 FROM usuarios LIMIT 1");
+  if (await usuarioAtual().catch(() => null)) redirect("/");
+  let temUsuario: unknown;
+  try {
+    temUsuario = await queryOne("SELECT 1 FROM usuarios LIMIT 1");
+  } catch {
+    redirect("/diagnostico"); // banco não configurado ou sem tabelas
+  }
   if (!temUsuario) redirect("/setup");
   const sp = await searchParams;
   return (

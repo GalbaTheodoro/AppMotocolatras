@@ -6,7 +6,12 @@ import { criarPrimeiroAdmin } from "../acoes";
 export const dynamic = "force-dynamic";
 
 export default async function Setup({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
-  const temUsuario = await queryOne("SELECT 1 FROM usuarios LIMIT 1");
+  let temUsuario: unknown;
+  try {
+    temUsuario = await queryOne("SELECT 1 FROM usuarios LIMIT 1");
+  } catch {
+    redirect("/diagnostico"); // banco não configurado ou sem tabelas
+  }
   if (temUsuario) redirect("/login");
   const sp = await searchParams;
   return (

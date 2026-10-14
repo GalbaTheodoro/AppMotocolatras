@@ -15,12 +15,24 @@ const globalForPool = globalThis as unknown as { pgPool?: Pool };
  * por isso não validamos a cadeia (a conexão continua criptografada).
  */
 export function configConexao(url: string): pg.PoolConfig {
-  const u = new URL(url);
-  const local = ["localhost", "127.0.0.1", ""].includes(u.hostname) || u.searchParams.has("host");
-  ["sslmode", "sslcert", "sslkey", "sslrootcert", "pgbouncer"].forEach((p) => u.searchParams.delete(p));
+  let connectionString = url.trim().replace(/^["']|["']$/g, "");
+  let local = false;
+  try {
+    const u = new URL(connectionString);
+    local = ["localhost", "127.0.0.1", ""].includes(u.hostname) || u.searchParams.has("host");
+  } catch {
+    // senha com caracteres especiais pode impedir a leitura como URL; segue com o texto original
+  }
+  // remove parâmetros de SSL do texto (o SSL é configurado abaixo)
+  connectionString = connectionString
+    .replace(/([?&])(sslmode|sslcert|sslkey|sslrootcert|pgbouncer|uselibpqcompat)=[^&]*/g, "$1")
+    .replace(/[?&]+$/, "")
+    .replace(/\?&+/, "?")
+    .replace(/&&+/g, "&");
   return {
-    connectionString: u.toString(),
+    connectionString,
     ssl: local ? undefined : { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10_000,
   };
 }
 
