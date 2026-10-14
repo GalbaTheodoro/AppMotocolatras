@@ -39,3 +39,32 @@ export function comMsg(path: string, tipo: "ok" | "erro", msg: string) {
   const sep = path.includes("?") ? "&" : "?";
   return `${path}${sep}${tipo}=${encodeURIComponent(msg)}`;
 }
+
+export const STATUS_SOLIC: Record<string, string> = {
+  pendente: "Em análise",
+  aprovada: "Aprovada",
+  recusada: "Recusada",
+  cancelada: "Cancelada",
+};
+
+export function soDigitos(v: string | null | undefined) {
+  return (v ?? "").replace(/\D/g, "");
+}
+
+export function formatarCPF(v: string) {
+  const d = soDigitos(v);
+  return d.length === 11 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : v;
+}
+
+/** Valida CPF pelos dígitos verificadores */
+export function cpfValido(v: string) {
+  const d = soDigitos(v);
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  const calc = (n: number) => {
+    let s = 0;
+    for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i);
+    const r = (s * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return calc(9) === Number(d[9]) && calc(10) === Number(d[10]);
+}

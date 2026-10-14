@@ -18,6 +18,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
             coalesce(sum(quantidade - emp) FILTER (WHERE status IN ('disponivel','emprestado')),0)::int disp
        FROM (SELECT q.quantidade, q.status, ${EMPRESTADAS_SQL} emp FROM equipamentos q) t`
   );
+  const solic = await queryOne<{ n: number }>("SELECT count(*)::int n FROM solicitacoes WHERE status='pendente'").catch(() => null);
   const pessoas = await queryOne<{ n: number }>("SELECT count(*)::int n FROM pessoas WHERE ativo");
   const sit = situacaoSql("m", cfg.dias_tolerancia);
   const fin = await queryOne<{ pend_n: number; pend_v: number; atr_n: number; atr_v: number; mes_v: number }>(
@@ -54,6 +55,11 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
         <Link className="btn" href="/emprestimos/novo">+ Novo empréstimo</Link>
       </div>
       <Mensagem sp={sp} />
+      {solic && solic.n > 0 && (
+        <div className="msg" style={{ background: "var(--warn-bg)", color: "var(--warn)" }}>
+          <b>{solic.n} solicitação(ões) aguardando análise.</b> <Link href="/solicitacoes">Analisar agora</Link>
+        </div>
+      )}
       <div className="grid">
         <div className="stat"><div className="l">Unidades · {eq?.itens} equipamento(s)</div><div className="n">{eq?.total}</div></div>
         <div className="stat"><div className="l">Unidades disponíveis</div><div className="n">{eq?.disp}</div></div>

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import NavLink from "@/components/NavLink";
 import { exigirUsuario } from "@/lib/auth";
+import { queryOne } from "@/lib/db";
 import { sair } from "../(publico)/acoes";
 
 export const dynamic = "force-dynamic";
 
 export default async function SistemaLayout({ children }: { children: React.ReactNode }) {
   const u = await exigirUsuario();
+  const pend = await queryOne<{ n: number }>("SELECT count(*)::int n FROM solicitacoes WHERE status='pendente'").catch(() => null);
   return (
     <div className="shell">
       <aside className="side">
@@ -22,6 +24,7 @@ export default async function SistemaLayout({ children }: { children: React.Reac
           <NavLink href="/equipamentos">Equipamentos</NavLink>
           <NavLink href="/pessoas">Pessoas</NavLink>
           <div className="sep">Controle</div>
+          <NavLink href="/solicitacoes">Solicitações{pend && pend.n > 0 ? <span className="badge">{pend.n}</span> : null}</NavLink>
           <NavLink href="/emprestimos">Empréstimos</NavLink>
           <NavLink href="/mensalidades">Mensalidades</NavLink>
           {u.papel === "admin" && (

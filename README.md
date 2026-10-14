@@ -53,7 +53,12 @@ npm run db:setup             # cria as tabelas
 npm run dev                  # http://localhost:3000
 ```
 
-## Atualizar o banco (versão com quantidades)
+## Solicitações pelo público
+- Página pública **/solicitar**: a pessoa informa seus dados (CPF validado) e os equipamentos/quantidades que deseja. Recebe um **protocolo**.
+- Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
+- No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
+
+## Atualizar o banco
 Se o banco já existia, rode **de novo** o `db/schema.sql` no SQL Editor do Supabase. É seguro: só acrescenta o que falta, não apaga dados.
 
 ## Regras de cobrança

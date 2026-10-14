@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { queryOne } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
@@ -27,6 +28,9 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <label>Senha<input name="senha" type="password" required /></label>
           <button className="btn" type="submit">Entrar</button>
         </form>
+        <p className="sub" style={{ textAlign: "center", marginTop: 16, fontSize: ".9rem" }}>
+          Quer pegar um equipamento emprestado? <Link href="/solicitar">Faça sua solicitação</Link>
+        </p>
       </div>
     </div>
   );
