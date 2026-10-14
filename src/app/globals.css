@@ -225,3 +225,11 @@ th { background: var(--side); color: var(--brand); }
   .cal-dia .quem { font-size: .62rem; }
   .cal-topo h2 { font-size: 1rem; }
 }
+
+/* ===== Instalar aplicativo ===== */
+.instalar { width: 100%; display: inline-flex; justify-content: center; align-items: center; gap: 6px; border: 1px dashed #bdbb0c; background: #fffde0;
+  color: var(--brand-ink); border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: .92rem; cursor: pointer; margin-top: 12px; }
+.instalar:hover { background: #fbf8b8; }
+.instalar.escuro { background: transparent; color: var(--brand); border-color: #4a4a20; margin-top: 10px; font-size: .85rem; padding: 8px 10px; }
+.instalar.escuro:hover { background: var(--side-2); }
+.ajuda-ios { font-size: .82rem; color: var(--muted); margin: 8px 0 0; text-align: center; }

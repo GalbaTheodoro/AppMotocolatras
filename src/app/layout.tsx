@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Motocólatras MC – Controle de Empréstimos",
   description: "Cadastro de equipamentos, pessoas, empréstimos e mensalidades",
+  applicationName: "Motocólatras MC",
+  appleWebApp: { capable: true, title: "Motocólatras", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = { themeColor: "#0b0b0c" };

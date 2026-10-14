@@ -3,6 +3,7 @@ import NavLink from "@/components/NavLink";
 import { queryOne } from "@/lib/db";
 import type { Usuario } from "@/lib/auth";
 import { sair } from "@/app/(publico)/acoes";
+import InstalarApp from "@/components/InstalarApp";
 
 const NOME_PAPEL = { admin: "Administrador", operador: "Operador", integrante: "Integrante" } as const;
 
@@ -54,6 +55,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
         <form action={sair}>
           <button type="submit">Sair</button>
         </form>
+        <InstalarApp variante="escuro" />
       </div>
     </aside>
   );

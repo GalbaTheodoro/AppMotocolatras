@@ -4,6 +4,7 @@ import { queryOne } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
 import Mensagem from "@/components/Mensagem";
 import { LogoTopo } from "@/components/Marca";
+import InstalarApp from "@/components/InstalarApp";
 import { entrar } from "../acoes";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,8 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             Acompanhar minha solicitação
           </Link>
         </div>
+        <InstalarApp />
+        <div style={{ height: 14 }} />
         <details open={!!sp.erro} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
           <summary style={{ cursor: "pointer", fontWeight: 600, color: "var(--muted)", fontSize: ".9rem" }}>Acesso da equipe</summary>
           <div style={{ marginTop: 12 }}>
