@@ -6,6 +6,7 @@ import Mensagem from "@/components/Mensagem";
 import CabecaPublica from "@/components/CabecaPublica";
 import CampoArquivo from "@/components/CampoArquivo";
 import CampoCPF from "@/components/CampoCPF";
+import SeletorEquipamentos from "@/components/SeletorEquipamentos";
 import { enviarSolicitacao } from "./acoes";
 
 export const dynamic = "force-dynamic";
@@ -50,21 +51,10 @@ export default async function Solicitar({ searchParams }: { searchParams: Promis
 
           <div className="card">
             <h2>Equipamentos desejados</h2>
-            <p className="sub" style={{ marginBottom: 12 }}>Informe a quantidade de cada item que você precisa. Deixe 0 nos que não quiser.</p>
             {equipamentos.length === 0 ? (
               <div className="vazio">Nenhum equipamento disponível para solicitação no momento.</div>
             ) : (
-              <div className="itens">
-                {equipamentos.map((e) => (
-                  <div className="item" key={e.id}>
-                    <div>
-                      <div className="nome">{e.nome}</div>
-                      <div className="desc">{[e.categoria, e.descricao].filter(Boolean).join(" · ")}</div>
-                    </div>
-                    <input type="number" name={`qtd_${e.id}`} min={0} max={50} step={1} defaultValue={0} aria-label={`Quantidade de ${e.nome}`} />
-                  </div>
-                ))}
-              </div>
+              <SeletorEquipamentos equipamentos={equipamentos as never} />
             )}
             <label style={{ marginTop: 14 }}>Observações<textarea name="observacoes" placeholder="Tamanho, para quando precisa, alguma informação importante…" /></label>
           </div>

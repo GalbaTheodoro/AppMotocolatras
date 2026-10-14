@@ -114,7 +114,6 @@ export default function Termo({ d, cfg }: { d: DadosTermo; cfg: Config }) {
           <li value={c()}>Compromete-se a utilizar os equipamentos com zelo, somente para a finalidade a que se destinam, seguindo as orientações de uso e de segurança do fabricante.</li>
           <li value={c()}>É de uso <b>pessoal e intransferível</b>: é proibido emprestar, alugar, vender, ceder ou dar em garantia os equipamentos a terceiros.</li>
           <li value={c()}>Deve mantê-los limpos, guardados em local seguro, protegidos de umidade, calor excessivo e produtos que possam danificá-los, e não realizar modificações, pinturas ou reparos sem autorização do CLUBE.</li>
-          <li value={c()}>Equipamentos de proteção (capacetes e similares) que sofrerem queda ou impacto devem ser comunicados ao CLUBE, pois podem perder a capacidade de proteção mesmo sem dano aparente.</li>
         </ol>
 
         <h3>5. Danos, perda, furto ou roubo</h3>
