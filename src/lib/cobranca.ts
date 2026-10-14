@@ -4,20 +4,21 @@ import { lerConfig } from "./config";
 /**
  * Regra de cobrança:
  * - Cada empréstimo tem os primeiros N meses grátis (padrão 3), contados da data de início.
- * - Depois disso, é gerada 1 mensalidade por mês para aquele equipamento,
+ * - Depois disso, é gerada 1 mensalidade por mês para o empréstimo (cobrando por unidade),
  *   com vencimento no início de cada competência, enquanto o equipamento não for devolvido.
  * - Gera apenas competências que já começaram (até hoje). É idempotente.
- * - O valor usado é o valor global vigente no momento em que a mensalidade é gerada.
+ * - Valor = valor global vigente × quantidade de unidades emprestadas no momento da geração.
  */
 export async function gerarMensalidades() {
   const cfg = await lerConfig();
   await query(
-    `INSERT INTO mensalidades (emprestimo_id, competencia_inicio, competencia_fim, vencimento, valor)
+    `INSERT INTO mensalidades (emprestimo_id, competencia_inicio, competencia_fim, vencimento, valor, quantidade)
      SELECT e.id,
             (e.data_inicio + make_interval(months => k))::date,
             ((e.data_inicio + make_interval(months => k + 1))::date - 1),
             (e.data_inicio + make_interval(months => k))::date,
-            $2
+            $2::numeric * e.quantidade,
+            e.quantidade
        FROM emprestimos e
        CROSS JOIN LATERAL generate_series(
             $1::int,
@@ -36,3 +37,7 @@ export function situacaoSql(alias = "m", tolerancia = 5) {
   return `CASE WHEN ${alias}.status = 'pendente' AND ${alias}.vencimento + ${Number(tolerancia)} < ${HOJE_SQL}
                THEN 'atrasado' ELSE ${alias}.status END`;
 }
+
+/** SQL: unidades emprestadas (em aberto) de um equipamento — use com alias q */
+export const EMPRESTADAS_SQL =
+  "(SELECT coalesce(sum(x.quantidade),0)::int FROM emprestimos x WHERE x.equipamento_id = q.id AND x.data_devolucao IS NULL)";

@@ -75,6 +75,27 @@ INSERT INTO configuracoes (chave, valor) VALUES
   ('dias_tolerancia', '5')
 ON CONFLICT (chave) DO NOTHING;
 
+-- ===== Versão 2: quantidade por equipamento =====
+-- (seguro rodar em banco já existente: só acrescenta o que falta)
+ALTER TABLE equipamentos ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE emprestimos  ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE emprestimos  ADD COLUMN IF NOT EXISTS quantidade_inicial INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE mensalidades ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 1;
+-- Agora um equipamento pode estar em vários empréstimos ao mesmo tempo
+DROP INDEX IF EXISTS emprestimo_ativo_unico;
+-- A disponibilidade passa a ser calculada pelas quantidades
+UPDATE equipamentos SET status = 'disponivel' WHERE status = 'emprestado';
+
+CREATE TABLE IF NOT EXISTS devolucoes (
+  id             SERIAL PRIMARY KEY,
+  emprestimo_id  INTEGER NOT NULL REFERENCES emprestimos(id) ON DELETE CASCADE,
+  data           DATE NOT NULL,
+  quantidade     INTEGER NOT NULL CHECK (quantidade > 0),
+  criado_por     INTEGER REFERENCES usuarios(id),
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS emprestimos_equip_ativos ON emprestimos (equipamento_id) WHERE data_devolucao IS NULL;
+
 -- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
 -- API pública do Supabase (chave anon). O sistema conecta direto como dono das
 -- tabelas e por isso continua com acesso normal.
@@ -84,3 +105,4 @@ ALTER TABLE equipamentos  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE emprestimos   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mensalidades  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE devolucoes    ENABLE ROW LEVEL SECURITY;

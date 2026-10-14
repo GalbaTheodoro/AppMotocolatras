@@ -6,7 +6,7 @@ import { pagar, estornar, cancelar } from "./acoes";
 
 type Linha = {
   id: number; competencia_inicio: string; competencia_fim: string; vencimento: string; valor: number;
-  situacao: string; pago_em: string | null; forma_pagamento: string | null;
+  situacao: string; quantidade?: number; pago_em: string | null; forma_pagamento: string | null;
   pessoa?: string; equipamento?: string; emprestimo_id: number;
 };
 
@@ -29,7 +29,7 @@ export default function TabelaMensalidades({
               {mostrarPessoa && <><td>{m.pessoa}</td><td><Link href={`/emprestimos/${m.emprestimo_id}`}>{m.equipamento}</Link></td></>}
               <td>{data(m.competencia_inicio)} a {data(m.competencia_fim)}</td>
               <td>{data(m.vencimento)}</td>
-              <td className="r">{moeda(m.valor)}</td>
+              <td className="r">{moeda(m.valor)}{(m.quantidade ?? 1) > 1 && <div className="sub" style={{ fontSize: ".75rem" }}>{m.quantidade} unidades</div>}</td>
               <td>
                 <Tag tipo={m.situacao}>{SITUACAO_MENS[m.situacao]}</Tag>
                 {m.situacao === "pago" && <div className="sub" style={{ fontSize: ".78rem" }}>em {data(m.pago_em)}{m.forma_pagamento ? ` · ${m.forma_pagamento}` : ""}</div>}

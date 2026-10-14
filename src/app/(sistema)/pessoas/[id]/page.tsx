@@ -55,11 +55,12 @@ export default async function EditarPessoa({
       <div className="tbl">
         {emprestimos.length === 0 ? <div className="vazio">Nenhum empréstimo.</div> : (
           <table>
-            <thead><tr><th>Equipamento</th><th>Início</th><th>Grátis até</th><th>Situação</th><th></th></tr></thead>
+            <thead><tr><th>Equipamento</th><th className="r">Qtd.</th><th>Início</th><th>Grátis até</th><th>Situação</th><th></th></tr></thead>
             <tbody>
               {emprestimos.map((e) => (
                 <tr key={e.id}>
                   <td>{e.equipamento}{e.codigo ? ` (${e.codigo})` : ""}</td>
+                  <td className="r">{e.data_devolucao ? e.quantidade_inicial : e.quantidade}</td>
                   <td>{data(e.data_inicio)}</td><td>{data(e.fim_gratis)}</td>
                   <td>{e.data_devolucao ? <Tag tipo="devolvido">Devolvido em {data(e.data_devolucao)}</Tag> : <Tag tipo="emprestado">Com a pessoa</Tag>}</td>
                   <td className="r"><Link href={`/emprestimos/${e.id}`}>Ver</Link></td>
@@ -78,7 +79,7 @@ export default async function EditarPessoa({
             <tbody>
               {mensalidades.map((m) => (
                 <tr key={m.id}>
-                  <td>{m.equipamento}</td>
+                  <td>{m.equipamento}{m.quantidade > 1 ? ` × ${m.quantidade}` : ""}</td>
                   <td>{data(m.competencia_inicio)} a {data(m.competencia_fim)}</td>
                   <td>{data(m.vencimento)}</td>
                   <td><Tag tipo={m.situacao}>{SITUACAO_MENS[m.situacao]}</Tag></td>

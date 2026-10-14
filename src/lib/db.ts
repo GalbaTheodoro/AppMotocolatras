@@ -58,5 +58,21 @@ export async function queryOne<T extends QueryResultRow = any>(text: string, par
   return rows[0] ?? null;
 }
 
+/** Executa várias consultas numa única transação (tudo ou nada) */
+export async function transacao<R>(fn: (q: <T extends QueryResultRow = any>(text: string, params?: unknown[]) => Promise<T[]>) => Promise<R>) {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const r = await fn(async (text, params = []) => (await client.query(text, params)).rows);
+    await client.query("COMMIT");
+    return r;
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 /** Data de hoje no fuso de São Paulo, em SQL */
 export const HOJE_SQL = "(now() AT TIME ZONE 'America/Sao_Paulo')::date";

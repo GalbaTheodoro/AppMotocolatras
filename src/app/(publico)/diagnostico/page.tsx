@@ -60,7 +60,7 @@ export default async function Diagnostico() {
       await client.connect();
       itens.push({ ok: true, titulo: "Conexão com o banco", detalhe: "Conectou com sucesso." });
       const r = await client.query(
-        `SELECT t FROM unnest(ARRAY['usuarios','pessoas','equipamentos','emprestimos','mensalidades','configuracoes']) t
+        `SELECT t FROM unnest(ARRAY['usuarios','pessoas','equipamentos','emprestimos','mensalidades','configuracoes','devolucoes']) t
           WHERE to_regclass('public.'||t) IS NULL`);
       const faltando = r.rows.map((x) => x.t);
       itens.push({
@@ -70,6 +70,14 @@ export default async function Diagnostico() {
           : `Faltando: ${faltando.join(", ")}. Rode o arquivo db/schema.sql no SQL Editor do Supabase.`,
       });
       if (faltando.length === 0) {
+        const col = await client.query(
+          "SELECT 1 FROM information_schema.columns WHERE table_name='emprestimos' AND column_name='quantidade_inicial'");
+        itens.push({
+          ok: col.rowCount === 1,
+          titulo: "Versão do banco",
+          detalhe: col.rowCount === 1 ? "Atualizada (com quantidades)."
+            : "Desatualizada. Rode o arquivo db/schema.sql de novo no SQL Editor do Supabase (é seguro, não apaga dados).",
+        });
         const n = await client.query("SELECT count(*)::int n FROM usuarios");
         temUsuarios = n.rows[0].n > 0;
         itens.push({ ok: true, titulo: "Usuários", detalhe: temUsuarios ? `${n.rows[0].n} cadastrado(s).` : "Nenhum ainda — acesse /setup para criar o administrador." });

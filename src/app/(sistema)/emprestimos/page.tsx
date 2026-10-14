@@ -41,11 +41,12 @@ export default async function Emprestimos({ searchParams }: { searchParams: Prom
       <div className="tbl">
         {lista.length === 0 ? <div className="vazio">Nenhum empréstimo encontrado.</div> : (
           <table>
-            <thead><tr><th>Equipamento</th><th>Pessoa</th><th>Início</th><th>Cobrança</th><th className="r">Em aberto</th><th></th></tr></thead>
+            <thead><tr><th>Equipamento</th><th className="r">Qtd.</th><th>Pessoa</th><th>Início</th><th>Cobrança</th><th className="r">Em aberto</th><th></th></tr></thead>
             <tbody>
               {lista.map((e) => (
                 <tr key={e.id}>
                   <td>{e.equipamento}{e.codigo ? ` (${e.codigo})` : ""}</td>
+                  <td className="r">{e.data_devolucao ? e.quantidade_inicial : e.quantidade}</td>
                   <td>{e.pessoa}</td>
                   <td>{data(e.data_inicio)}</td>
                   <td>

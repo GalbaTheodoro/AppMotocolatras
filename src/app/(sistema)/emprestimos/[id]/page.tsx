@@ -33,6 +33,9 @@ export default async function Emprestimo({
       WHERE m.emprestimo_id=$1 ORDER BY m.competencia_inicio`, [e.id]);
   const aberto = mens.filter((m) => m.status === "pendente").reduce((s, m) => s + Number(m.valor), 0);
   const pago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
+  const devolucoes = await query(
+    `SELECT d.*, us.nome usuario FROM devolucoes d LEFT JOIN usuarios us ON us.id=d.criado_por
+      WHERE d.emprestimo_id=$1 ORDER BY d.data, d.id`, [e.id]);
   const hoje = hojeISO();
   const volta = `/emprestimos/${e.id}`;
 
@@ -41,7 +44,9 @@ export default async function Emprestimo({
       <div className="head">
         <div>
           <h1>{e.equipamento}{e.codigo ? ` (${e.codigo})` : ""}</h1>
-          <p className="sub">Emprestado para <Link href={`/pessoas/${e.pessoa_id}`}>{e.pessoa}</Link></p>
+          <p className="sub">
+            {e.data_devolucao ? e.quantidade_inicial : e.quantidade} unidade(s) emprestada(s) para <Link href={`/pessoas/${e.pessoa_id}`}>{e.pessoa}</Link>
+          </p>
         </div>
         {u?.papel === "admin" && (
           <form action={excluirEmprestimo}>
@@ -67,6 +72,14 @@ export default async function Emprestimo({
               : e.fim_gratis > hoje ? <Tag tipo="gratis">No período grátis</Tag>
               : <Tag tipo="emprestado">Em cobrança mensal</Tag>}
           </dd>
+          <dt>Quantidade</dt>
+          <dd>
+            {e.data_devolucao ? `${e.quantidade_inicial} unidade(s) — todas devolvidas`
+              : e.quantidade === e.quantidade_inicial ? `${e.quantidade} unidade(s)`
+              : `${e.quantidade} com a pessoa (de ${e.quantidade_inicial} emprestadas)`}
+          </dd>
+          <dt>Mensalidade atual</dt>
+          <dd>{e.data_devolucao ? "—" : `${e.quantidade} × ${moeda(cfg.valor_mensalidade)} = ${moeda(e.quantidade * cfg.valor_mensalidade)}`}</dd>
           <dt>Telefone</dt><dd>{e.telefone ?? "—"}</dd>
           <dt>Registrado por</dt><dd>{e.criado_por_nome ?? "—"}</dd>
         </dl>
@@ -77,19 +90,41 @@ export default async function Emprestimo({
           <h2>Registrar devolução</h2>
           <form action={devolver} className="acoes">
             <input type="hidden" name="id" value={e.id} />
-            <input type="date" name="data_devolucao" defaultValue={hoje} min={e.data_inicio} max={hoje} required />
-            <BotaoConfirmar mensagem="Confirmar a devolução do equipamento?" className="btn">Confirmar devolução</BotaoConfirmar>
+            <label style={{ fontWeight: 400 }}>Quantidade devolvida
+              <input type="number" name="quantidade" min={1} max={e.quantidade} step={1} defaultValue={e.quantidade} required style={{ width: 120 }} />
+            </label>
+            <label style={{ fontWeight: 400 }}>Data
+              <input type="date" name="data_devolucao" defaultValue={hoje} min={e.data_inicio} max={hoje} required />
+            </label>
+            <BotaoConfirmar mensagem="Confirmar a devolução?" className="btn">Confirmar devolução</BotaoConfirmar>
           </form>
           <p className="sub" style={{ fontSize: ".85rem", marginTop: 10 }}>
-            Mensalidades pendentes de meses que começam a partir da data de devolução são removidas. As já vencidas continuam em aberto.
+            Pode devolver só parte das unidades: o empréstimo continua com o restante e a mensalidade passa a ser cobrada pela nova quantidade.
+            Mensalidades pendentes de meses que começam a partir da data da devolução são recalculadas; as já vencidas continuam como estão.
           </p>
         </div>
+      )}
+
+      {devolucoes.length > 0 && (
+        <>
+          <h2>Devoluções</h2>
+          <div className="tbl">
+            <table>
+              <thead><tr><th>Data</th><th className="r">Quantidade</th><th>Registrado por</th></tr></thead>
+              <tbody>
+                {devolucoes.map((d) => (
+                  <tr key={d.id}><td>{data(d.data)}</td><td className="r">{d.quantidade}</td><td>{d.usuario ?? "—"}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <h2>Mensalidades</h2>
       {mens.length === 0 && !e.data_devolucao ? (
         <div className="tbl"><div className="vazio">
-          Nenhuma mensalidade ainda. A primeira será gerada em {data(e.fim_gratis)} no valor de {moeda(cfg.valor_mensalidade)}.
+          Nenhuma mensalidade ainda. A primeira será gerada em {data(e.fim_gratis)} no valor de {moeda(cfg.valor_mensalidade * e.quantidade)} ({e.quantidade} × {moeda(cfg.valor_mensalidade)}).
         </div></div>
       ) : (
         <TabelaMensalidades linhas={mens as never} volta={volta} admin={u?.papel === "admin"} mostrarPessoa={false} />

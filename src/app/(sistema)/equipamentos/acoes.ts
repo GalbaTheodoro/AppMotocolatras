@@ -13,6 +13,7 @@ function dados(fd: FormData) {
     codigo: txt(fd, "codigo"),
     categoria: txt(fd, "categoria"),
     descricao: txt(fd, "descricao"),
+    quantidade: Math.floor(Number(fd.get("quantidade") ?? 1)),
     status: ["disponivel", "manutencao", "inativo"].includes(status) ? status : "disponivel",
   };
 }
@@ -24,14 +25,16 @@ function erroUnico(e: unknown) {
 export async function criarEquipamento(fd: FormData) {
   await exigirUsuario();
   const d = dados(fd);
-  if (!d.nome) redirect(comMsg("/equipamentos/novo", "erro", "Informe o nome do equipamento"));
+  const volta = "/equipamentos/novo";
+  if (!d.nome) redirect(comMsg(volta, "erro", "Informe o nome do equipamento"));
+  if (!(d.quantidade >= 1)) redirect(comMsg(volta, "erro", "A quantidade deve ser 1 ou mais"));
   try {
     await query(
-      "INSERT INTO equipamentos (nome, codigo, categoria, descricao, status) VALUES ($1,$2,$3,$4,$5)",
-      [d.nome, d.codigo, d.categoria, d.descricao, d.status]
+      "INSERT INTO equipamentos (nome, codigo, categoria, descricao, status, quantidade) VALUES ($1,$2,$3,$4,$5,$6)",
+      [d.nome, d.codigo, d.categoria, d.descricao, d.status, d.quantidade]
     );
   } catch (e) {
-    if (erroUnico(e)) redirect(comMsg("/equipamentos/novo", "erro", "Já existe um equipamento com este código"));
+    if (erroUnico(e)) redirect(comMsg(volta, "erro", "Já existe um equipamento com este código"));
     throw e;
   }
   revalidatePath("/equipamentos");
@@ -44,14 +47,16 @@ export async function salvarEquipamento(fd: FormData) {
   const d = dados(fd);
   const volta = `/equipamentos/${id}`;
   if (!d.nome) redirect(comMsg(volta, "erro", "Informe o nome do equipamento"));
-  const atual = await queryOne<{ status: string }>("SELECT status FROM equipamentos WHERE id=$1", [id]);
-  if (!atual) redirect("/equipamentos");
-  // Se está emprestado, o status é controlado pelo empréstimo
-  const status = atual.status === "emprestado" ? "emprestado" : d.status;
+  if (!(d.quantidade >= 1)) redirect(comMsg(volta, "erro", "A quantidade deve ser 1 ou mais"));
+  const emp = await queryOne<{ n: number }>(
+    "SELECT coalesce(sum(quantidade),0)::int n FROM emprestimos WHERE equipamento_id=$1 AND data_devolucao IS NULL", [id]);
+  if (emp && d.quantidade < emp.n) {
+    redirect(comMsg(volta, "erro", `Há ${emp.n} unidade(s) emprestada(s). A quantidade não pode ser menor que isso.`));
+  }
   try {
     await query(
-      "UPDATE equipamentos SET nome=$1, codigo=$2, categoria=$3, descricao=$4, status=$5 WHERE id=$6",
-      [d.nome, d.codigo, d.categoria, d.descricao, status, id]
+      "UPDATE equipamentos SET nome=$1, codigo=$2, categoria=$3, descricao=$4, status=$5, quantidade=$6 WHERE id=$7",
+      [d.nome, d.codigo, d.categoria, d.descricao, d.status, d.quantidade, id]
     );
   } catch (e) {
     if (erroUnico(e)) redirect(comMsg(volta, "erro", "Já existe um equipamento com este código"));

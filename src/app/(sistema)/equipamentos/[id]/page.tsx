@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { query, queryOne } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
 import { data } from "@/lib/formato";
+import { EMPRESTADAS_SQL } from "@/lib/cobranca";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
@@ -14,7 +15,7 @@ export default async function EditarEquipamento({
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string; ok?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
-  const e = await queryOne("SELECT * FROM equipamentos WHERE id=$1", [Number(id) || 0]);
+  const e = await queryOne(`SELECT q.*, ${EMPRESTADAS_SQL} emprestadas FROM equipamentos q WHERE q.id=$1`, [Number(id) || 0]);
   if (!e) notFound();
   const u = await usuarioAtual();
   const historico = await query(
@@ -23,7 +24,7 @@ export default async function EditarEquipamento({
   return (
     <>
       <div className="head">
-        <div><h1>{e.nome}</h1><p className="sub">Editar equipamento</p></div>
+        <div><h1>{e.nome}</h1><p className="sub">{e.quantidade} unidade(s) · {e.emprestadas} emprestada(s) · {e.quantidade - e.emprestadas} disponível(is)</p></div>
         {u?.papel === "admin" && (
           <form action={excluirEquipamento}>
             <input type="hidden" name="id" value={e.id} />
@@ -37,11 +38,11 @@ export default async function EditarEquipamento({
       <div className="tbl">
         {historico.length === 0 ? <div className="vazio">Ainda não foi emprestado.</div> : (
           <table>
-            <thead><tr><th>Pessoa</th><th>Início</th><th>Devolução</th><th></th></tr></thead>
+            <thead><tr><th>Pessoa</th><th className="r">Qtd.</th><th>Início</th><th>Devolução</th><th></th></tr></thead>
             <tbody>
               {historico.map((h) => (
                 <tr key={h.id}>
-                  <td>{h.pessoa}</td><td>{data(h.data_inicio)}</td>
+                  <td>{h.pessoa}</td><td className="r">{h.data_devolucao ? h.quantidade_inicial : h.quantidade}</td><td>{data(h.data_inicio)}</td>
                   <td>{h.data_devolucao ? data(h.data_devolucao) : <Tag tipo="emprestado">Em aberto</Tag>}</td>
                   <td className="r"><Link href={`/emprestimos/${h.id}`}>Ver</Link></td>
                 </tr>

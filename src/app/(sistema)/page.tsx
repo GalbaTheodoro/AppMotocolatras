@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { query, queryOne, HOJE_SQL } from "@/lib/db";
-import { gerarMensalidades, situacaoSql } from "@/lib/cobranca";
+import { gerarMensalidades, situacaoSql, EMPRESTADAS_SQL } from "@/lib/cobranca";
 import { lerConfig } from "@/lib/config";
 import { moeda, data } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
@@ -11,12 +11,12 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
   await gerarMensalidades();
   const cfg = await lerConfig();
 
-  const eq = await queryOne<{ total: number; disp: number; emp: number; man: number }>(
-    `SELECT count(*)::int total,
-            count(*) FILTER (WHERE status='disponivel')::int disp,
-            count(*) FILTER (WHERE status='emprestado')::int emp,
-            count(*) FILTER (WHERE status='manutencao')::int man
-       FROM equipamentos`
+  const eq = await queryOne<{ itens: number; total: number; emp: number; disp: number }>(
+    `SELECT count(*)::int itens,
+            coalesce(sum(quantidade),0)::int total,
+            coalesce(sum(emp),0)::int emp,
+            coalesce(sum(quantidade - emp) FILTER (WHERE status IN ('disponivel','emprestado')),0)::int disp
+       FROM (SELECT q.quantidade, q.status, ${EMPRESTADAS_SQL} emp FROM equipamentos q) t`
   );
   const pessoas = await queryOne<{ n: number }>("SELECT count(*)::int n FROM pessoas WHERE ativo");
   const sit = situacaoSql("m", cfg.dias_tolerancia);
@@ -29,7 +29,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
        FROM (SELECT m.*, ${sit} s FROM mensalidades m) x`
   );
   const comecam = await query(
-    `SELECT e.id, p.nome pessoa, q.nome equipamento,
+    `SELECT e.id, p.nome pessoa, q.nome equipamento, e.quantidade,
             (e.data_inicio + make_interval(months => $1::int))::date fim_gratis
        FROM emprestimos e JOIN pessoas p ON p.id=e.pessoa_id JOIN equipamentos q ON q.id=e.equipamento_id
       WHERE e.data_devolucao IS NULL
@@ -38,7 +38,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
     [cfg.meses_gratis]
   );
   const atrasadas = await query(
-    `SELECT m.id, m.vencimento, m.valor, p.nome pessoa, p.telefone, q.nome equipamento, e.id emp_id
+    `SELECT m.id, m.vencimento, m.valor, m.quantidade, p.nome pessoa, p.telefone, q.nome equipamento, e.id emp_id
        FROM mensalidades m JOIN emprestimos e ON e.id=m.emprestimo_id
        JOIN pessoas p ON p.id=e.pessoa_id JOIN equipamentos q ON q.id=e.equipamento_id
       WHERE ${sit} = 'atrasado' ORDER BY m.vencimento LIMIT 10`
@@ -55,9 +55,9 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
       </div>
       <Mensagem sp={sp} />
       <div className="grid">
-        <div className="stat"><div className="l">Equipamentos</div><div className="n">{eq?.total}</div></div>
-        <div className="stat"><div className="l">Disponíveis</div><div className="n">{eq?.disp}</div></div>
-        <div className="stat"><div className="l">Emprestados</div><div className="n">{eq?.emp}</div></div>
+        <div className="stat"><div className="l">Unidades · {eq?.itens} equipamento(s)</div><div className="n">{eq?.total}</div></div>
+        <div className="stat"><div className="l">Unidades disponíveis</div><div className="n">{eq?.disp}</div></div>
+        <div className="stat"><div className="l">Unidades emprestadas</div><div className="n">{eq?.emp}</div></div>
         <div className="stat"><div className="l">Pessoas ativas</div><div className="n">{pessoas?.n}</div></div>
       </div>
       <div className="grid">
@@ -76,7 +76,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
               {atrasadas.map((m) => (
                 <tr key={m.id}>
                   <td>{m.pessoa}</td><td>{m.telefone ?? "—"}</td>
-                  <td><Link href={`/emprestimos/${m.emp_id}`}>{m.equipamento}</Link></td>
+                  <td><Link href={`/emprestimos/${m.emp_id}`}>{m.equipamento}</Link>{m.quantidade > 1 ? ` × ${m.quantidade}` : ""}</td>
                   <td><Tag tipo="atrasado">{data(m.vencimento)}</Tag></td>
                   <td className="r">{moeda(m.valor)}</td>
                 </tr>
@@ -95,7 +95,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
               {comecam.map((c) => (
                 <tr key={c.id}>
                   <td>{c.pessoa}</td>
-                  <td><Link href={`/emprestimos/${c.id}`}>{c.equipamento}</Link></td>
+                  <td><Link href={`/emprestimos/${c.id}`}>{c.equipamento}</Link>{c.quantidade > 1 ? ` × ${c.quantidade}` : ""}</td>
                   <td><Tag tipo="gratis">{data(c.fim_gratis)}</Tag></td>
                 </tr>
               ))}
