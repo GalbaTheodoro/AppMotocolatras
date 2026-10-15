@@ -59,6 +59,10 @@ npm run dev                  # http://localhost:3000
 - Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
 - No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
 
+## Avisos de novas solicitações (grátis)
+- Em **Configurações → Avisos**: WhatsApp via CallMeBot (cada pessoa ativa o próprio número e recebe uma apikey) e/ou Telegram via bot próprio (@BotFather).
+- Botões **Enviar mensagem de teste** e **Descobrir chat id**. Se o aviso falhar, a solicitação é salva normalmente.
+
 ## Agenda da sede
 - Menu **Agenda da sede**: calendário mensal; cada dia pode ter **uma reserva (dia inteiro)**.
 - Perfil **Integrante** (criado em Usuários): entra no sistema, vê só a agenda, reserva dias livres e cancela as próprias reservas futuras. Vê quem reservou os outros dias, mas não valores.

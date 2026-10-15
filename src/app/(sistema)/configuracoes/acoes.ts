@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { query } from "@/lib/db";
 import { exigirAdmin } from "@/lib/auth";
 import { comMsg, txt } from "@/lib/formato";
+import { enviarAviso, lerConfigAvisos } from "@/lib/notificar";
 
 export async function salvarConfig(fd: FormData) {
   await exigirAdmin();
@@ -33,4 +34,57 @@ export async function salvarConfig(fd: FormData) {
     );
   }
   redirect(comMsg("/configuracoes", "ok", "Configurações salvas"));
+}
+
+// ===== Avisos (WhatsApp / Telegram) =====
+
+export async function salvarAvisos(fd: FormData) {
+  await exigirAdmin();
+  const pares: [string, string][] = [
+    ["aviso_whatsapp", txt(fd, "aviso_whatsapp") ?? ""],
+    ["aviso_telegram_token", txt(fd, "aviso_telegram_token") ?? ""],
+    ["aviso_telegram_chats", txt(fd, "aviso_telegram_chats") ?? ""],
+  ];
+  for (const [k, v] of pares) {
+    await query(
+      "INSERT INTO configuracoes (chave, valor) VALUES ($1,$2) ON CONFLICT (chave) DO UPDATE SET valor=EXCLUDED.valor", [k, v]);
+  }
+  redirect(comMsg("/configuracoes", "ok", "Avisos salvos. Use “Enviar mensagem de teste” para conferir."));
+}
+
+export async function testarAvisos() {
+  await exigirAdmin();
+  const r = await enviarAviso("✅ Teste do sistema Motocólatras: os avisos de novas solicitações estão funcionando.");
+  if (r.ok === 0 && r.falhas.length === 0) {
+    redirect(comMsg("/configuracoes", "erro", "Nenhum destino configurado ainda. Preencha WhatsApp ou Telegram e salve."));
+  }
+  if (r.falhas.length) {
+    redirect(comMsg("/configuracoes", "erro", `Enviado para ${r.ok}. Falhou: ${r.falhas.join(" · ")}`));
+  }
+  redirect(comMsg("/configuracoes", "ok", `Mensagem de teste enviada para ${r.ok} destino(s). Confira o celular.`));
+}
+
+/** Lista as conversas que falaram com o bot do Telegram, para descobrir o "chat id" */
+export async function descobrirChatsTelegram() {
+  await exigirAdmin();
+  const cfg = await lerConfigAvisos();
+  if (!cfg.telegramToken) redirect(comMsg("/configuracoes", "erro", "Salve primeiro o token do bot do Telegram"));
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${cfg.telegramToken}/getUpdates`, { cache: "no-store" });
+    const j = await r.json();
+    if (!j.ok) redirect(comMsg("/configuracoes", "erro", `Telegram: ${j.description ?? "token inválido"}`));
+    const chats = new Map<string, string>();
+    for (const u of j.result ?? []) {
+      const c = u.message?.chat ?? u.my_chat_member?.chat ?? u.channel_post?.chat;
+      if (c) chats.set(String(c.id), c.title ?? [c.first_name, c.last_name].filter(Boolean).join(" ") ?? c.username ?? "");
+    }
+    if (chats.size === 0) {
+      redirect(comMsg("/configuracoes", "erro", "Nenhuma conversa encontrada. Mande um “oi” para o bot no Telegram (ou adicione-o ao grupo e mande uma mensagem) e tente de novo."));
+    }
+    const lista = [...chats].map(([id, nome]) => `${nome || "conversa"}: ${id}`).join(" · ");
+    redirect(comMsg("/configuracoes", "ok", `Chats encontrados — copie o número para o campo “Chat ID”: ${lista}`));
+  } catch (e) {
+    if ((e as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) throw e;
+    redirect(comMsg("/configuracoes", "erro", "Não foi possível falar com o Telegram agora"));
+  }
 }
