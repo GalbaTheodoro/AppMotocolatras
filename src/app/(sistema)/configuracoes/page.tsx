@@ -45,20 +45,29 @@ export default async function Configuracoes({ searchParams }: { searchParams: Pr
         <h2>Avisos de novas solicitações (grátis)</h2>
         <p className="sub" style={{ marginTop: -4 }}>
           Toda vez que alguém enviar uma solicitação, o sistema manda uma mensagem com nome, telefone, itens e o link para analisar.
-          Pode usar WhatsApp, Telegram ou os dois.
+          Pode usar WhatsApp, Telegram ou mais de um ao mesmo tempo.
         </p>
         <form action={salvarAvisos} className="f">
           <div className="full" style={{ background: "#f7fbf7", border: "1px solid #cfe8d4", borderRadius: 8, padding: 12 }}>
-            <b>WhatsApp (CallMeBot)</b> — cada pessoa que vai receber faz uma vez, no próprio celular:
+            <b>WhatsApp pelo TextMeBot</b> (recomendado para WhatsApp — teste grátis de 2 dias, depois a partir de US$ 1/mês):
             <ol style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: ".9rem" }}>
-              <li>Salve o contato do CallMeBot (número em <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noreferrer">callmebot.com</a>).</li>
-              <li>Mande para ele no WhatsApp: <code>I allow callmebot to send me messages</code></li>
-              <li>Ele responde com a sua <b>apikey</b>. Coloque abaixo: <code>número com DDI | apikey</code></li>
+              <li>Entre em <a href="https://textmebot.com" target="_blank" rel="noreferrer">textmebot.com</a>, peça a <b>ApiKey</b> com seu e-mail.</li>
+              <li>Pelo link do e-mail, cadastre e conecte o WhatsApp que vai <b>enviar</b> os avisos (um número do clube ou o seu).</li>
+              <li>Cole a ApiKey abaixo e os números que vão <b>receber</b> (com DDI 55 e DDD).</li>
             </ol>
           </div>
-          <label className="full">Quem recebe no WhatsApp (um por linha: telefone | apikey)
+          <label>ApiKey do TextMeBot<input name="aviso_textmebot_key" defaultValue={av.textmebotKey} autoComplete="off" /></label>
+          <label>Números que recebem (um por linha)
+            <textarea name="aviso_textmebot_numeros" defaultValue={av.textmebotNumeros.join("\n")} placeholder={"5534999998888\n5534988887777"} style={{ minHeight: 60 }} />
+          </label>
+          <div className="full" style={{ background: "#fafaf7", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
+            <b>WhatsApp pelo CallMeBot</b> (gratuito, mas no momento <b>sem vagas</b> para novos números). Quando abrir vaga:
+            salve o número indicado em <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noreferrer">callmebot.com</a>,
+            mande <code>I allow callmebot to send me messages</code> e coloque abaixo <code>telefone | apikey</code>.
+          </div>
+          <label className="full">CallMeBot — um por linha (telefone | apikey)
             <textarea name="aviso_whatsapp" defaultValue={av.whatsapp.map((w) => `${w.telefone} | ${w.apikey}`).join("\n")}
-              placeholder={"5534999998888 | 1234567\n5534988887777 | 7654321"} />
+              placeholder="5534999998888 | 1234567" style={{ minHeight: 60 }} />
           </label>
           <div className="full" style={{ background: "#f3f7fd", border: "1px solid #cfdcef", borderRadius: 8, padding: 12 }}>
             <b>Telegram</b> (opcional, mais estável):

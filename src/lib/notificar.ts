@@ -8,11 +8,23 @@ import { query } from "./db";
  * Configurado em Configurações > Avisos. Falhas nunca impedem a solicitação de ser salva.
  */
 
-type ConfigAvisos = { whatsapp: { telefone: string; apikey: string }[]; telegramToken: string; telegramChats: string[] };
+type ConfigAvisos = {
+  whatsapp: { telefone: string; apikey: string }[];
+  textmebotKey: string;
+  textmebotNumeros: string[];
+  telegramToken: string;
+  telegramChats: string[];
+};
+
+/** Só dígitos; se vier sem o 55 (DDD + número, 10 ou 11 dígitos), acrescenta o código do Brasil */
+function comDDI(v: string) {
+  const d = v.replace(/\D/g, "");
+  return d.length === 10 || d.length === 11 ? "55" + d : d;
+}
 
 export async function lerConfigAvisos(): Promise<ConfigAvisos> {
   const rows = await query<{ chave: string; valor: string }>(
-    "SELECT chave, valor FROM configuracoes WHERE chave IN ('aviso_whatsapp','aviso_telegram_token','aviso_telegram_chats')");
+    "SELECT chave, valor FROM configuracoes WHERE chave IN ('aviso_whatsapp','aviso_telegram_token','aviso_telegram_chats','aviso_textmebot_key','aviso_textmebot_numeros')");
   const m = Object.fromEntries(rows.map((r) => [r.chave, r.valor]));
   const whatsapp = (m.aviso_whatsapp ?? "")
     .split("\n")
@@ -21,11 +33,15 @@ export async function lerConfigAvisos(): Promise<ConfigAvisos> {
     .map((l: string) => {
       // "telefone | apikey" — o telefone pode ter espaços, parênteses e traços
       const m = l.match(/^(.*?)\s*[|;]\s*(\S+)\s*$/) ?? l.match(/^(.*)[\s,]+(\S+)\s*$/);
-      return { telefone: (m?.[1] ?? "").replace(/\D/g, ""), apikey: (m?.[2] ?? "").trim() };
+      return { telefone: comDDI(m?.[1] ?? ""), apikey: (m?.[2] ?? "").trim() };
     })
     .filter((w: { telefone: string; apikey: string }) => w.telefone && w.apikey);
   const telegramChats = (m.aviso_telegram_chats ?? "").split(/[\n,;\s]+/).map((s: string) => s.trim()).filter(Boolean);
-  return { whatsapp, telegramToken: (m.aviso_telegram_token ?? "").trim(), telegramChats };
+  const textmebotNumeros = (m.aviso_textmebot_numeros ?? "").split(/[\n,;]+/).map(comDDI).filter(Boolean);
+  return {
+    whatsapp, textmebotKey: (m.aviso_textmebot_key ?? "").trim(), textmebotNumeros,
+    telegramToken: (m.aviso_telegram_token ?? "").trim(), telegramChats,
+  };
 }
 
 async function comTempo<T>(p: Promise<T>, ms = 6000): Promise<T> {
@@ -64,6 +80,20 @@ export async function enviarAviso(texto: string): Promise<{ ok: number; falhas: 
         })
         .catch((e) => `WhatsApp ${w.telefone}: ${e.message}`)
     );
+  }
+  // WhatsApp pelo TextMeBot (pago, baixo custo): uma apikey da conta, vários números
+  if (cfg.textmebotKey) {
+    for (const numero of cfg.textmebotNumeros) {
+      const url = `https://api.textmebot.com/send.php?recipient=%2B${numero}&apikey=${encodeURIComponent(cfg.textmebotKey)}&text=${encodeURIComponent(texto)}`;
+      tarefas.push(
+        comTempo(fetch(url, { cache: "no-store" }), 10000)
+          .then(async (r) => {
+            const corpo = await r.text().catch(() => "");
+            return r.ok && !/error|invalid|not /i.test(corpo.slice(0, 300)) ? null : `WhatsApp ${numero}: ${corpo.replace(/<[^>]+>/g, " ").trim().slice(0, 120) || r.status}`;
+          })
+          .catch((e) => `WhatsApp ${numero}: ${e.message}`)
+      );
+    }
   }
   if (cfg.telegramToken) {
     for (const chat of cfg.telegramChats) {

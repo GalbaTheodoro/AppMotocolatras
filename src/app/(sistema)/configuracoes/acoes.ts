@@ -42,6 +42,8 @@ export async function salvarAvisos(fd: FormData) {
   await exigirAdmin();
   const pares: [string, string][] = [
     ["aviso_whatsapp", txt(fd, "aviso_whatsapp") ?? ""],
+    ["aviso_textmebot_key", txt(fd, "aviso_textmebot_key") ?? ""],
+    ["aviso_textmebot_numeros", txt(fd, "aviso_textmebot_numeros") ?? ""],
     ["aviso_telegram_token", txt(fd, "aviso_telegram_token") ?? ""],
     ["aviso_telegram_chats", txt(fd, "aviso_telegram_chats") ?? ""],
   ];
