@@ -104,3 +104,10 @@ Em **Usuários → Links de cadastro** há um link para cada perfil (Integrante,
 Quem abre o link preenche login, senha e a ficha completa, e o acesso é liberado na hora.
 Os administradores recebem aviso no celular a cada novo cadastro. "Gerar novo link" invalida o anterior.
 Não precisa rodar SQL: os códigos ficam na tabela `configuracoes` (chaves `convite_*`).
+
+## Agenda do clube (eventos e aniversários)
+A antiga "Agenda da sede" virou **Agenda do clube**:
+- **Aniversários** do integrante, da esposa/cônjuge e dos filhos aparecem sozinhos (🎂), a partir das datas da ficha.
+- Qualquer usuário logado marca **Reunião, Festa, Encontro ou Rolê** (tocando no dia → "+ Marcar"). Quem criou ou a equipe edita/remove. Todos recebem aviso no celular.
+- Evento marcado **na sede** ocupa o dia: ninguém consegue reservar a sede nesse dia (e vice-versa).
+- Rodar de novo o `db/schema.sql` no Supabase (cria a tabela `eventos`).

@@ -228,3 +228,20 @@ ALTER TABLE reservas_sede ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_inscricoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuario_ficha ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuario_filhos ENABLE ROW LEVEL SECURITY;
+
+-- ===== Versão 8: eventos do clube na agenda (reuniões, festas, encontros, rolês) =====
+CREATE TABLE IF NOT EXISTS eventos (
+  id           SERIAL PRIMARY KEY,
+  data         DATE NOT NULL,
+  hora         TEXT,                               -- "19:30" (opcional)
+  tipo         TEXT NOT NULL CHECK (tipo IN ('reuniao','festa','encontro','role')),
+  titulo       TEXT NOT NULL,
+  local        TEXT,
+  na_sede      BOOLEAN NOT NULL DEFAULT FALSE,     -- se for na sede, o dia fica ocupado para reservas
+  descricao    TEXT,
+  status       TEXT NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo','cancelado')),
+  criado_por   INTEGER REFERENCES usuarios(id),
+  criado_em    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS eventos_data ON eventos (data) WHERE status = 'ativo';
+ALTER TABLE eventos ENABLE ROW LEVEL SECURITY;

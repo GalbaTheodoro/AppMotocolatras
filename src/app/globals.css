@@ -246,3 +246,19 @@ th { background: var(--side); color: var(--brand); }
 .filho { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fafaf7; }
 .filho-num { width: 26px; height: 26px; border-radius: 50%; background: var(--side); color: var(--brand); display: grid; place-items: center; font-weight: 700; font-size: .8rem; align-self: center; }
 .filho .remover { align-self: center; }
+
+/* Agenda do clube: eventos e aniversários */
+.cal-dia .marcas { display: flex; flex-wrap: wrap; gap: 1px; font-size: .78rem; line-height: 1; margin-top: auto; }
+.cal-dia .marcas i { font-style: normal; }
+.cal-dia.evento-sede { background: var(--info-bg); border-color: #b9d2f0; color: var(--info); }
+.lg.evento-sede { background: var(--info-bg); border-color: #b9d2f0; }
+.bloco-dia { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.bloco-dia h3 { margin: 0 0 8px; font-size: 1rem; }
+.lista-dia { margin: 0; padding-left: 18px; }
+.lista-dia li { margin: 3px 0; }
+details.evento { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+details.evento > summary { cursor: pointer; list-style: none; }
+details.evento > summary::-webkit-details-marker, details > summary.btn::-webkit-details-marker { display: none; }
+details > summary.btn { list-style: none; cursor: pointer; }
+tr.destaque td { background: var(--warn-bg); }
+@media (max-width: 640px) { .cal-dia .marcas { font-size: .62rem; } }

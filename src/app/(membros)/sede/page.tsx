@@ -5,7 +5,9 @@ import { data as fmtData, moeda, hojeISO } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
-import { reservar, cancelarReserva, salvarReserva } from "./acoes";
+import FormEvento from "@/components/FormEvento";
+import { eventosEntre, aniversariosEntre, rotuloAniversario, TIPOS_EVENTO, type Evento, type Aniversario } from "@/lib/agenda";
+import { reservar, cancelarReserva, salvarReserva, criarEvento, salvarEvento, cancelarEvento } from "./acoes";
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -40,6 +42,14 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
     `SELECT r.*, c.nome criado_por_nome FROM reservas_sede r LEFT JOIN usuarios c ON c.id=r.criado_por
       WHERE r.status='confirmada' AND r.data BETWEEN $1 AND $2 ORDER BY r.data`, [inicio, fim]);
   const porDia = new Map(reservas.map((r) => [r.data, r]));
+  const [eventos, aniversarios] = await Promise.all([eventosEntre(inicio, fim), aniversariosEntre(inicio, fim)]);
+  const agrupar = <T,>(lista: T[], chave: (x: T) => string) => {
+    const m = new Map<string, T[]>();
+    for (const x of lista) m.set(chave(x), [...(m.get(chave(x)) ?? []), x]);
+    return m;
+  };
+  const evPorDia = agrupar(eventos, (e) => e.data);
+  const anivPorDia = agrupar(aniversarios, (a) => a.dia);
 
   const diaSel = /^\d{4}-\d{2}-\d{2}$/.test(sp.d ?? "") ? sp.d! : null;
   let reservaSel: Reserva | null = null;
@@ -48,6 +58,14 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
       `SELECT r.*, c.nome criado_por_nome FROM reservas_sede r LEFT JOIN usuarios c ON c.id=r.criado_por
         WHERE r.status='confirmada' AND r.data=$1`, [diaSel]))[0] ?? null;
   }
+  let eventosSel: Evento[] = [], anivSel: Aniversario[] = [];
+  if (diaSel) {
+    const noMes = diaSel >= inicio && diaSel <= fim;
+    eventosSel = noMes ? evPorDia.get(diaSel) ?? [] : await eventosEntre(diaSel, diaSel);
+    anivSel = noMes ? anivPorDia.get(diaSel) ?? [] : await aniversariosEntre(diaSel, diaSel);
+  }
+  const eventoSede = eventosSel.find((e) => e.na_sede) ?? null;
+  const podeEditarEvento = (e: Evento) => equipe || e.criado_por === u.id;
   const integrantes = equipe
     ? await query<{ id: number; nome: string }>("SELECT id, nome FROM usuarios WHERE ativo AND papel='integrante' ORDER BY nome")
     : [];
@@ -69,8 +87,8 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
     <>
       <div className="head">
         <div>
-          <h1>Agenda da sede</h1>
-          <p className="sub">Reserva por dia inteiro · toque em um dia livre para reservar</p>
+          <h1>Agenda do clube</h1>
+          <p className="sub">Reservas da sede, reuniões, festas, encontros, rolês e aniversários · toque em um dia</p>
         </div>
       </div>
       <Mensagem sp={sp} />
@@ -87,21 +105,35 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
             if (!d) return <div key={k} className="cal-dia vazio-dia" />;
             const dia = iso(ano, mes, d);
             const r = porDia.get(dia);
+            const evs = evPorDia.get(dia) ?? [];
+            const anivs = anivPorDia.get(dia) ?? [];
+            const sedeEv = evs.find((e) => e.na_sede);
             const passado = dia < hoje;
             const classes = ["cal-dia",
-              r ? (r.usuario_id === u.id && !equipe ? "minha" : "reservado") : "livre",
+              r ? (r.usuario_id === u.id && !equipe ? "minha" : "reservado") : sedeEv ? "evento-sede" : "livre",
               passado ? "passado" : "", dia === hoje ? "hoje" : "", dia === diaSel ? "sel" : ""].join(" ");
             return (
               <Link key={k} href={`/sede?m=${mParam}&d=${dia}#dia`} className={classes} scroll={false}>
                 <span className="num">{d}</span>
-                {r ? <span className="quem">{r.responsavel.split(" ")[0]}</span> : !passado && <span className="quem livre-txt">livre</span>}
+                {r ? <span className="quem">{r.responsavel.split(" ")[0]}</span>
+                  : sedeEv ? <span className="quem">{sedeEv.titulo}</span>
+                  : !passado && <span className="quem livre-txt">livre</span>}
+                {(evs.length > 0 || anivs.length > 0) && (
+                  <span className="marcas" title={[...evs.map((e) => `${TIPOS_EVENTO[e.tipo].nome}: ${e.titulo}`), ...anivs.map((a) => `Aniversário: ${a.nome}`)].join("\n")}>
+                    {evs.filter((e) => e !== sedeEv).slice(0, 3).map((e) => <i key={e.id}>{TIPOS_EVENTO[e.tipo].icone}</i>)}
+                    {anivs.length > 0 && <i>🎂{anivs.length > 1 ? anivs.length : ""}</i>}
+                  </span>
+                )}
               </Link>
             );
           })}
         </div>
         <div className="cal-legenda">
           <span><i className="lg livre" /> Livre</span>
-          <span><i className="lg reservado" /> Reservado</span>
+          <span><i className="lg reservado" /> Sede reservada</span>
+          <span><i className="lg evento-sede" /> Evento na sede</span>
+          <span>🎂 Aniversário</span>
+          {Object.values(TIPOS_EVENTO).map((t) => <span key={t.nome}>{t.icone} {t.nome}</span>)}
           {!equipe && <span><i className="lg minha" /> Minha reserva</span>}
           <span><i className="lg hoje" /> Hoje</span>
         </div>
@@ -114,6 +146,51 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
             const ds = DIA_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
             return <h2>{fmtData(diaSel)} · {ds}</h2>;
           })()}
+
+          {anivSel.length > 0 && (
+            <div className="bloco-dia">
+              <h3>🎂 Aniversários</h3>
+              <ul className="lista-dia">
+                {anivSel.map((a, i) => (
+                  <li key={i}><b>{rotuloAniversario(a)}</b>{a.idade ? ` · faz ${a.idade} anos` : ""}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {eventosSel.length > 0 && (
+            <div className="bloco-dia">
+              <h3>Eventos</h3>
+              {eventosSel.map((e) => (
+                <details key={e.id} className="evento">
+                  <summary>
+                    <span>{TIPOS_EVENTO[e.tipo].icone}</span> <b>{e.titulo}</b>
+                    <span className="sub"> · {TIPOS_EVENTO[e.tipo].nome}{e.hora ? ` · ${e.hora}` : ""}{e.na_sede ? " · na sede" : e.local ? ` · ${e.local}` : ""}</span>
+                  </summary>
+                  <dl className="info">
+                    {e.local && (<><dt>Local</dt><dd>{e.local}</dd></>)}
+                    {e.descricao && (<><dt>Detalhes</dt><dd style={{ whiteSpace: "pre-wrap" }}>{e.descricao}</dd></>)}
+                    <dt>Marcado por</dt><dd>{e.criado_por_nome ?? "—"}</dd>
+                  </dl>
+                  {podeEditarEvento(e) && (
+                    <>
+                      <details style={{ marginTop: 8 }}>
+                        <summary className="btn sec peq" style={{ display: "inline-block" }}>Editar</summary>
+                        <div style={{ marginTop: 10 }}><FormEvento acao={salvarEvento} data={e.data} ev={e} botao="Salvar evento" /></div>
+                      </details>
+                      <form action={cancelarEvento} style={{ marginTop: 8 }}>
+                        <input type="hidden" name="id" value={e.id} />
+                        <BotaoConfirmar mensagem={`Remover "${e.titulo}" da agenda?`}>Remover evento</BotaoConfirmar>
+                      </form>
+                    </>
+                  )}
+                </details>
+              ))}
+            </div>
+          )}
+
+          <div className="bloco-dia">
+          <h3>🏠 Sede</h3>
 
           {reservaSel ? (
             <>
@@ -158,12 +235,14 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
                 </form>
               )}
             </>
+          ) : eventoSede ? (
+            <p className="sub" style={{ margin: 0 }}><Tag tipo="emprestado">Ocupada</Tag> A sede está ocupada pelo evento <b>{eventoSede.titulo}</b>. Não é possível reservar neste dia.</p>
           ) : !equipe && diaSel < hoje ? (
             <p className="sub">Esta data já passou.</p>
           ) : (
             <form action={reservar} className="f">
               <input type="hidden" name="data" value={diaSel} />
-              <p className="full" style={{ margin: 0 }}><Tag tipo="disponivel">Livre</Tag> Reservar a sede para o dia inteiro.</p>
+              <p className="full" style={{ margin: 0 }}><Tag tipo="disponivel">Livre</Tag> Reservar a sede para o dia inteiro (uso particular — para evento do clube, use “Marcar” abaixo).</p>
               {equipe ? (
                 <>
                   <label>Quem está reservando
@@ -184,6 +263,14 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
               <div className="full acoes"><button className="btn" type="submit">Reservar {fmtData(diaSel)}</button></div>
               {!equipe && <p className="full sub" style={{ fontSize: ".85rem", margin: 0 }}>O valor da reserva é combinado e registrado pela equipe.</p>}
             </form>
+          )}
+          </div>
+
+          {(equipe || diaSel >= hoje) && (
+            <details className="bloco-dia">
+              <summary className="btn sec" style={{ display: "inline-block" }}>+ Marcar reunião, festa, encontro ou rolê</summary>
+              <div style={{ marginTop: 12 }}><FormEvento acao={criarEvento} data={diaSel} botao="Marcar na agenda" /></div>
+            </details>
           )}
         </div>
       )}
@@ -209,7 +296,46 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
         </>
       )}
 
-      <h2>Reservas de {MESES[mes - 1].toLowerCase()}</h2>
+      <h2>Eventos de {MESES[mes - 1].toLowerCase()}</h2>
+      <div className="tbl">
+        {eventos.length === 0 ? <div className="vazio">Nenhum evento marcado neste mês. Toque em um dia para marcar.</div> : (
+          <table>
+            <thead><tr><th>Data</th><th>Evento</th><th>Local</th><th></th></tr></thead>
+            <tbody>
+              {eventos.map((e) => (
+                <tr key={e.id}>
+                  <td>{fmtData(e.data)}{e.hora ? ` · ${e.hora}` : ""}</td>
+                  <td>{TIPOS_EVENTO[e.tipo].icone} <b>{e.titulo}</b> <span className="sub">· {TIPOS_EVENTO[e.tipo].nome}</span></td>
+                  <td>{e.na_sede ? "Sede" : e.local ?? "—"}</td>
+                  <td className="r"><Link href={`/sede?m=${mParam}&d=${e.data}#dia`}>Abrir</Link></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {aniversarios.length > 0 && (
+        <>
+          <h2>🎂 Aniversariantes de {MESES[mes - 1].toLowerCase()}</h2>
+          <div className="tbl">
+            <table>
+              <thead><tr><th>Dia</th><th>Nome</th><th>Idade</th></tr></thead>
+              <tbody>
+                {aniversarios.map((a, i) => (
+                  <tr key={i} className={a.dia === hoje ? "destaque" : ""}>
+                    <td>{a.dia.slice(8, 10)}/{a.dia.slice(5, 7)}{a.dia === hoje ? " · hoje!" : ""}</td>
+                    <td>{rotuloAniversario(a)}</td>
+                    <td>{a.idade ? `${a.idade} anos` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      <h2>Reservas da sede em {MESES[mes - 1].toLowerCase()}</h2>
       {equipe && reservas.length > 0 && (
         <p className="sub" style={{ marginTop: -6 }}>
           {reservas.length} reserva(s) · total {moeda(totais.v)} · recebido {moeda(totais.p)} · a receber {moeda(totais.v - totais.p)}

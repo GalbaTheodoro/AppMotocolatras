@@ -35,8 +35,8 @@ export default async function Lateral({ u }: { u: Usuario }) {
             <NavLink href="/solicitacoes">Solicitações{pend && pend.n > 0 ? <span className="badge">{pend.n}</span> : null}</NavLink>
             <NavLink href="/emprestimos">Empréstimos</NavLink>
             <NavLink href="/mensalidades">Mensalidades</NavLink>
-            <div className="sep">Sede</div>
-            <NavLink href="/sede">Agenda da sede</NavLink>
+            <div className="sep">Agenda</div>
+            <NavLink href="/sede">Agenda do clube</NavLink>
             {u.papel === "admin" && (
               <>
                 <div className="sep">Administração</div>
@@ -47,8 +47,8 @@ export default async function Lateral({ u }: { u: Usuario }) {
           </>
         ) : (
           <>
-            <div className="sep">Sede</div>
-            <NavLink href="/sede">Agenda da sede</NavLink>
+            <div className="sep">Agenda</div>
+            <NavLink href="/sede">Agenda do clube</NavLink>
           </>
         )}
       </nav>

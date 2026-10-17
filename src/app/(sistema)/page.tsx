@@ -2,7 +2,8 @@ import Link from "next/link";
 import { query, queryOne, HOJE_SQL } from "@/lib/db";
 import { gerarMensalidades, situacaoSql, EMPRESTADAS_SQL } from "@/lib/cobranca";
 import { lerConfig } from "@/lib/config";
-import { moeda, data } from "@/lib/formato";
+import { moeda, data, hojeISO } from "@/lib/formato";
+import { eventosEntre, aniversariosEntre, rotuloAniversario, TIPOS_EVENTO } from "@/lib/agenda";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 
@@ -22,6 +23,14 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
   const reservas = await query(
     `SELECT id, data, responsavel, finalidade, valor, pagamento FROM reservas_sede
       WHERE status='confirmada' AND data >= ${HOJE_SQL} ORDER BY data LIMIT 5`).catch(() => []);
+  const hj = hojeISO();
+  const ate = new Date(Date.parse(hj + "T12:00:00Z") + 30 * 864e5).toISOString().slice(0, 10);
+  const [proxEventos, proxAniv] = await Promise.all([
+    eventosEntre(hj, ate).catch(() => []), aniversariosEntre(hj, ate).catch(() => [])]);
+  const agenda = [
+    ...proxEventos.map((e) => ({ dia: e.data, txt: `${TIPOS_EVENTO[e.tipo].icone} ${e.titulo}${e.hora ? " · " + e.hora : ""}${e.na_sede ? " · sede" : ""}` })),
+    ...proxAniv.map((a) => ({ dia: a.dia, txt: `🎂 ${rotuloAniversario(a)}${a.idade ? ` · ${a.idade} anos` : ""}` })),
+  ].sort((a, b) => a.dia.localeCompare(b.dia)).slice(0, 10);
   const pessoas = await queryOne<{ n: number }>("SELECT count(*)::int n FROM pessoas WHERE ativo");
   const sit = situacaoSql("m", cfg.dias_tolerancia);
   const fin = await queryOne<{ pend_n: number; pend_v: number; atr_n: number; atr_v: number; mes_v: number }>(
@@ -106,6 +115,22 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
                   <td>{c.pessoa}</td>
                   <td><Link href={`/emprestimos/${c.id}`}>{c.equipamento}</Link>{c.quantidade > 1 ? ` × ${c.quantidade}` : ""}</td>
                   <td><Tag tipo="gratis">{data(c.fim_gratis)}</Tag></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <h2>Agenda dos próximos 30 dias</h2>
+      <div className="tbl">
+        {agenda.length === 0 ? <div className="vazio">Nenhum evento ou aniversário nos próximos 30 dias. <Link href="/sede">Abrir agenda</Link></div> : (
+          <table>
+            <tbody>
+              {agenda.map((a, i) => (
+                <tr key={i}>
+                  <td style={{ width: 110 }}><Link href={`/sede?m=${a.dia.slice(0, 7)}&d=${a.dia}#dia`}>{data(a.dia)}</Link></td>
+                  <td>{a.txt}</td>
                 </tr>
               ))}
             </tbody>
