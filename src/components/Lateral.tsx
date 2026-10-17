@@ -54,7 +54,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
       </nav>
       <div className="user">
         <b>{u.nome}</b>
-        {NOME_PAPEL[u.papel]} · <NavLink href={equipe ? "/conta" : "/minha-conta"}>Minha conta</NavLink>
+        {NOME_PAPEL[u.papel]} · <NavLink href="/meus-dados">Meus dados</NavLink> · <NavLink href={equipe ? "/conta" : "/minha-conta"}>Senha</NavLink>
         <form action={sair}>
           <button type="submit">Sair</button>
         </form>

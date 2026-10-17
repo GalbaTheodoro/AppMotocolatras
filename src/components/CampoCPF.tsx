@@ -3,15 +3,19 @@
 import { cpfValido, formatarCPF } from "@/lib/formato";
 
 /** Confere o CPF antes de enviar, para a pessoa não perder o que já preencheu */
-export default function CampoCPF() {
+export default function CampoCPF({
+  name = "cpf", rotulo = "CPF", obrigatorio = true, valor,
+}: { name?: string; rotulo?: string; obrigatorio?: boolean; valor?: string | null }) {
   return (
     <label>
-      CPF *
+      {rotulo}{obrigatorio ? " *" : ""}
       <input
-        name="cpf"
+        name={name}
+        defaultValue={valor ?? ""}
         inputMode="numeric"
         placeholder="000.000.000-00"
-        required
+        required={obrigatorio}
+        pattern="\d{3}\.?\d{3}\.?\d{3}-?\d{2}"
         onBlur={(e) => {
           const el = e.currentTarget;
           if (el.value && cpfValido(el.value)) el.value = formatarCPF(el.value);
@@ -19,7 +23,6 @@ export default function CampoCPF() {
         onInvalid={(e) => {
           if (e.currentTarget.value) e.currentTarget.setCustomValidity("CPF inválido. Confira os números.");
         }}
-        pattern="\d{3}\.?\d{3}\.?\d{3}-?\d{2}"
         onChange={(e) => {
           const el = e.currentTarget;
           const d = el.value.replace(/\D/g, "");

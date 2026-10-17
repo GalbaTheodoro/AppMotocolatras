@@ -59,6 +59,10 @@ npm run dev                  # http://localhost:3000
 - Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
 - No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
 
+## Ficha do integrante
+- Em **Usuários**, cada pessoa tem **Abrir ficha**: dados pessoais (apelido, CPF, RG, nascimento, tipo sanguíneo, estado civil, profissão), endereço com busca por CEP, contato de emergência, moto/placa, **esposa/cônjuge** e **até 5 filhos**.
+- Ao criar um integrante, a ficha abre automaticamente. Cada pessoa também pode atualizar a própria ficha em **Meus dados**.
+
 ## Notificações no celular (grátis)
 - No menu lateral, o **administrador** toca em **🔔 Receber avisos neste celular** (de preferência pelo app instalado). A cada nova solicitação chega uma notificação; tocando nela abre a solicitação.
 - Android/Windows/Mac: funciona no Chrome/Edge. iPhone: só pelo app instalado na Tela de Início (iOS 16.4+).

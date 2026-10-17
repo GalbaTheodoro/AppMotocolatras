@@ -54,8 +54,8 @@ tr:last-child td { border-bottom: 0; }
 .btn.peq { padding: 5px 10px; font-size: .82rem; }
 .acoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-form.f { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-form.f .full { grid-column: 1 / -1; }
+.f { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.f .full { grid-column: 1 / -1; }
 label { display: flex; flex-direction: column; gap: 5px; font-size: .85rem; font-weight: 600; color: #3a4252; }
 input, select, textarea { font: inherit; padding: 9px 11px; border: 1px solid #cfd4dc; border-radius: 8px; background: #fff; color: var(--text); }
 input:focus, select:focus, textarea:focus { outline: 2px solid #ffd8bf; border-color: var(--brand); }
@@ -240,3 +240,9 @@ th { background: var(--side); color: var(--brand); }
 .notif-info { color: #b9b9b0; font-size: .78rem; margin-top: 6px; line-height: 1.35; }
 .notif .acoes { gap: 6px; flex-wrap: nowrap; }
 .notif .acoes .instalar { width: auto; flex: 1; }
+
+/* ===== Ficha do integrante ===== */
+.filhos { display: grid; gap: 10px; }
+.filho { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fafaf7; }
+.filho-num { width: 26px; height: 26px; border-radius: 50%; background: var(--side); color: var(--brand); display: grid; place-items: center; font-weight: 700; font-size: .8rem; align-self: center; }
+.filho .remover { align-self: center; }

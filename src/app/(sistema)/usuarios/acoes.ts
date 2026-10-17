@@ -19,13 +19,17 @@ export async function criarUsuario(fd: FormData) {
   const papel = lerPapel(fd);
   const telefone = txt(fd, "telefone");
   if (!nome || !email || senha.length < 6) redirect(comMsg("/usuarios", "erro", "Preencha nome, e-mail e senha (mín. 6 caracteres)"));
+  let novoId = 0;
   try {
-    await query("INSERT INTO usuarios (nome, email, senha_hash, papel, telefone) VALUES ($1,$2,$3,$4,$5)",
+    const [novo] = await query<{ id: number }>("INSERT INTO usuarios (nome, email, senha_hash, papel, telefone) VALUES ($1,$2,$3,$4,$5) RETURNING id",
       [nome, email, await bcrypt.hash(senha, 10), papel, telefone]);
+    novoId = novo.id;
   } catch (e) {
     if ((e as { code?: string }).code === "23505") redirect(comMsg("/usuarios", "erro", "Já existe um usuário com este e-mail"));
     throw e;
   }
+  // Integrante: já abre a ficha completa para preencher
+  if (papel === "integrante") redirect(comMsg(`/usuarios/${novoId}`, "ok", "Integrante criado. Preencha a ficha completa abaixo."));
   redirect(comMsg("/usuarios", "ok", "Usuário criado"));
 }
 

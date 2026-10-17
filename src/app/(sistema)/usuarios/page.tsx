@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { query } from "@/lib/db";
 import { exigirAdmin } from "@/lib/auth";
 import Mensagem from "@/components/Mensagem";
@@ -17,7 +18,10 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const filtro = sp.f ?? "";
   const lista = await query(
-    "SELECT id, nome, email, papel, ativo, telefone FROM usuarios WHERE ($1 = '' OR papel = $1) ORDER BY papel <> 'admin', papel <> 'operador', nome",
+    `SELECT u.id, u.nome, u.email, u.papel, u.ativo, u.telefone, f.apelido, f.conjuge_nome, f.cpf,
+            (SELECT count(*)::int FROM usuario_filhos x WHERE x.usuario_id=u.id) filhos
+       FROM usuarios u LEFT JOIN usuario_ficha f ON f.usuario_id=u.id
+      WHERE ($1 = '' OR u.papel = $1) ORDER BY u.papel <> 'admin', u.papel <> 'operador', u.nome`,
     [filtro]);
   return (
     <>
@@ -56,7 +60,14 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
           <tbody>
             {lista.map((u) => (
               <tr key={u.id}>
-                <td>{u.nome} {!u.ativo && <Tag tipo="inativo">Inativo</Tag>}</td>
+                <td>
+                  <Link href={`/usuarios/${u.id}`}><b>{u.nome}</b></Link>{u.apelido ? ` “${u.apelido}”` : ""} {!u.ativo && <Tag tipo="inativo">Inativo</Tag>}
+                  <div className="sub" style={{ fontSize: ".78rem" }}>
+                    {u.cpf ? "Ficha preenchida" : <span style={{ color: "var(--warn)" }}>Ficha incompleta</span>}
+                    {u.conjuge_nome ? ` · cônjuge: ${u.conjuge_nome}` : ""}{u.filhos ? ` · ${u.filhos} filho(s)` : ""}
+                  </div>
+                  <Link className="btn sec peq" style={{ marginTop: 4 }} href={`/usuarios/${u.id}`}>Abrir ficha</Link>
+                </td>
                 <td>{u.email}</td>
                 <td>
                   <form action={atualizarUsuario} className="acoes">

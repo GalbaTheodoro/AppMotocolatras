@@ -172,6 +172,45 @@ CREATE TABLE IF NOT EXISTS push_inscricoes (
   criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ===== Versão 7: ficha completa do integrante =====
+CREATE TABLE IF NOT EXISTS usuario_ficha (
+  usuario_id           INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+  apelido              TEXT,
+  cpf                  TEXT,
+  rg                   TEXT,
+  data_nascimento      DATE,
+  tipo_sanguineo       TEXT,
+  profissao            TEXT,
+  estado_civil         TEXT,
+  cep                  TEXT,
+  endereco             TEXT,
+  numero               TEXT,
+  complemento          TEXT,
+  bairro               TEXT,
+  cidade               TEXT,
+  uf                   TEXT,
+  contato_emergencia   TEXT,
+  telefone_emergencia  TEXT,
+  moto                 TEXT,
+  placa                TEXT,
+  conjuge_nome         TEXT,
+  conjuge_cpf          TEXT,
+  conjuge_nascimento   DATE,
+  conjuge_telefone     TEXT,
+  observacoes          TEXT,
+  atualizado_em        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS usuario_filhos (
+  id               SERIAL PRIMARY KEY,
+  usuario_id       INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  ordem            INTEGER NOT NULL,
+  nome             TEXT NOT NULL,
+  data_nascimento  DATE,
+  sexo             TEXT
+);
+CREATE INDEX IF NOT EXISTS usuario_filhos_usuario ON usuario_filhos (usuario_id, ordem);
+
 -- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
 -- API pública do Supabase (chave anon). O sistema conecta direto como dono das
 -- tabelas e por isso continua com acesso normal.
@@ -187,3 +226,5 @@ ALTER TABLE solicitacao_itens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arquivos      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reservas_sede ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_inscricoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usuario_ficha ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usuario_filhos ENABLE ROW LEVEL SECURITY;

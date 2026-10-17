@@ -62,7 +62,7 @@ export default async function Diagnostico() {
       await client.connect();
       itens.push({ ok: true, titulo: "Conexão com o banco", detalhe: "Conectou com sucesso." });
       const r = await client.query(
-        `SELECT t FROM unnest(ARRAY['usuarios','pessoas','equipamentos','emprestimos','mensalidades','configuracoes','devolucoes','solicitacoes','solicitacao_itens','arquivos','reservas_sede','push_inscricoes']) t
+        `SELECT t FROM unnest(ARRAY['usuarios','pessoas','equipamentos','emprestimos','mensalidades','configuracoes','devolucoes','solicitacoes','solicitacao_itens','arquivos','reservas_sede','push_inscricoes','usuario_ficha','usuario_filhos']) t
           WHERE to_regclass('public.'||t) IS NULL`);
       const faltando = r.rows.map((x) => x.t);
       itens.push({
