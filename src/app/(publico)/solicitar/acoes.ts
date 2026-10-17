@@ -81,10 +81,26 @@ export async function enviarSolicitacao(fd: FormData) {
         `INSERT INTO solicitacoes (protocolo, nome, cpf, telefone, email, endereco, observacoes)
          VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
         [p, nome, formatarCPF(cpf), telefone, email?.toLowerCase() ?? null, endereco, obs]);
+
+      // Cadastro em Pessoas: usa a pessoa com o mesmo CPF (atualizando os contatos) ou cria uma nova
+      const [existente] = await q<{ id: number }>(
+        "SELECT id FROM pessoas WHERE regexp_replace(coalesce(cpf,''),'\\D','','g') = $1 ORDER BY id LIMIT 1", [cpf]);
+      let pessoaId: number;
+      if (existente) {
+        pessoaId = existente.id;
+        await q(
+          `UPDATE pessoas SET telefone = coalesce($2, telefone), email = coalesce($3, email), endereco = coalesce($4, endereco)
+            WHERE id = $1`, [pessoaId, telefone, email?.toLowerCase() ?? null, endereco]);
+      } else {
+        [{ id: pessoaId }] = await q<{ id: number }>(
+          "INSERT INTO pessoas (nome, cpf, telefone, email, endereco, observacoes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+          [nome, formatarCPF(cpf), telefone, email?.toLowerCase() ?? null, endereco, `Cadastro via solicitação ${p}`]);
+      }
+      await q("UPDATE solicitacoes SET pessoa_id=$1 WHERE id=$2", [pessoaId, s.id]);
       for (const a of arquivos) {
         await q(
-          "INSERT INTO arquivos (solicitacao_id, tipo, nome, mime, tamanho, dados) VALUES ($1,$2,$3,$4,$5,$6)",
-          [s.id, a.tipo, a.nome, a.mime, a.dados.length, a.dados]);
+          "INSERT INTO arquivos (solicitacao_id, pessoa_id, tipo, nome, mime, tamanho, dados) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+          [s.id, pessoaId, a.tipo, a.nome, a.mime, a.dados.length, a.dados]);
       }
       for (const i of itensOk) {
         await q("INSERT INTO solicitacao_itens (solicitacao_id, equipamento_id, quantidade) VALUES ($1,$2,$3)", [s.id, i.id, i.qtd]);

@@ -245,3 +245,17 @@ CREATE TABLE IF NOT EXISTS eventos (
 );
 CREATE INDEX IF NOT EXISTS eventos_data ON eventos (data) WHERE status = 'ativo';
 ALTER TABLE eventos ENABLE ROW LEVEL SECURITY;
+
+-- ===== Versão 9: toda solicitação já cadastra a pessoa (backfill das solicitações antigas) =====
+INSERT INTO pessoas (nome, cpf, telefone, email, endereco, observacoes)
+SELECT DISTINCT ON (regexp_replace(s.cpf,'\D','','g')) s.nome, s.cpf, s.telefone, s.email, s.endereco, 'Cadastro via solicitação ' || s.protocolo
+  FROM solicitacoes s
+ WHERE s.pessoa_id IS NULL AND coalesce(s.cpf,'') <> ''
+   AND NOT EXISTS (SELECT 1 FROM pessoas p WHERE regexp_replace(coalesce(p.cpf,''),'\D','','g') = regexp_replace(s.cpf,'\D','','g'))
+ ORDER BY regexp_replace(s.cpf,'\D','','g'), s.criado_em DESC;
+UPDATE solicitacoes s SET pessoa_id = p.id
+  FROM pessoas p
+ WHERE s.pessoa_id IS NULL AND coalesce(s.cpf,'') <> ''
+   AND p.id = (SELECT min(id) FROM pessoas x WHERE regexp_replace(coalesce(x.cpf,''),'\D','','g') = regexp_replace(s.cpf,'\D','','g'));
+UPDATE arquivos a SET pessoa_id = s.pessoa_id
+  FROM solicitacoes s WHERE a.solicitacao_id = s.id AND a.pessoa_id IS NULL AND s.pessoa_id IS NOT NULL;

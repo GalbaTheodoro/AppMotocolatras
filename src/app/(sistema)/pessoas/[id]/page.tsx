@@ -4,7 +4,7 @@ import { query, queryOne } from "@/lib/db";
 import { usuarioAtual } from "@/lib/auth";
 import { lerConfig } from "@/lib/config";
 import { gerarMensalidades, situacaoSql } from "@/lib/cobranca";
-import { data, moeda, SITUACAO_MENS } from "@/lib/formato";
+import { data, moeda, SITUACAO_MENS, STATUS_SOLIC } from "@/lib/formato";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
@@ -35,6 +35,15 @@ export default async function EditarPessoa({
       WHERE e.pessoa_id=$1 AND m.status <> 'cancelado' ORDER BY m.vencimento DESC LIMIT 24`,
     [p.id]
   );
+  const solicitacoes = await query(
+    `SELECT s.id, s.protocolo, s.status, s.criado_em,
+            (SELECT string_agg(q.nome || ' × ' || i.quantidade, ', ' ORDER BY q.nome)
+               FROM solicitacao_itens i JOIN equipamentos q ON q.id=i.equipamento_id WHERE i.solicitacao_id=s.id) itens
+       FROM solicitacoes s
+      WHERE s.pessoa_id=$1 OR ($2 <> '' AND regexp_replace(coalesce(s.cpf,''),'\\D','','g') = $2)
+      ORDER BY s.criado_em DESC`,
+    [p.id, String(p.cpf ?? "").replace(/\D/g, "")]
+  );
   return (
     <>
       <div className="head">
@@ -54,6 +63,27 @@ export default async function EditarPessoa({
 
       <h2>Documentos</h2>
       <div className="card"><Documentos pessoaId={p.id} /></div>
+
+      {solicitacoes.length > 0 && (
+        <>
+          <h2>Solicitações</h2>
+          <div className="tbl">
+            <table>
+              <thead><tr><th>Protocolo</th><th>Data</th><th>Itens</th><th>Situação</th></tr></thead>
+              <tbody>
+                {solicitacoes.map((s) => (
+                  <tr key={s.id}>
+                    <td><Link href={`/solicitacoes/${s.id}`}><b>{s.protocolo}</b></Link></td>
+                    <td>{data(s.criado_em)}</td>
+                    <td>{s.itens ?? "—"}</td>
+                    <td><Tag tipo={s.status === "aprovada" ? "pago" : s.status === "recusada" ? "inativo" : "pendente"}>{STATUS_SOLIC[s.status] ?? s.status}</Tag></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <h2>Empréstimos</h2>
       <div className="tbl">

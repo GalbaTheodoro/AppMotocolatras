@@ -50,6 +50,9 @@ export async function excluirPessoa(fd: FormData) {
   if (uso) {
     redirect(comMsg(`/pessoas/${id}`, "erro", "Esta pessoa tem histórico de empréstimos. Marque como Inativa em vez de excluir."));
   }
+  // Solicitações e seus documentos continuam guardados, só deixam de apontar para o cadastro
+  await query("UPDATE arquivos SET pessoa_id=NULL WHERE pessoa_id=$1 AND solicitacao_id IS NOT NULL", [id]);
+  await query("UPDATE solicitacoes SET pessoa_id=NULL WHERE pessoa_id=$1", [id]);
   await query("DELETE FROM pessoas WHERE id=$1", [id]);
   revalidatePath("/pessoas");
   redirect(comMsg("/pessoas", "ok", "Pessoa excluída"));

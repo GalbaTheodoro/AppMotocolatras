@@ -111,3 +111,7 @@ A antiga "Agenda da sede" virou **Agenda do clube**:
 - Qualquer usuário logado marca **Reunião, Festa, Encontro ou Rolê** (tocando no dia → "+ Marcar"). Quem criou ou a equipe edita/remove. Todos recebem aviso no celular.
 - Evento marcado **na sede** ocupa o dia: ninguém consegue reservar a sede nesse dia (e vice-versa).
 - Rodar de novo o `db/schema.sql` no Supabase (cria a tabela `eventos`).
+
+## Solicitação já cadastra a pessoa
+Toda solicitação pública cria (ou atualiza, pelo CPF) o cadastro em **Pessoas**, com os documentos enviados.
+O cadastro da pessoa mostra o histórico de solicitações. Rodar o `db/schema.sql` cadastra também as solicitações antigas.
