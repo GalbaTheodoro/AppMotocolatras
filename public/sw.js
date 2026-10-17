@@ -1,6 +1,6 @@
 // Service worker simples: deixa o sistema instalável e mostra uma página amigável sem internet.
 // Não guarda dados do sistema em cache (tudo continua vindo do servidor).
-const CACHE = "motocolatras-v1";
+const CACHE = "motocolatras-v2";
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (e) => {
@@ -26,4 +26,34 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname === "/logo.png" || url.pathname.startsWith("/icons/")) {
     e.respondWith(caches.match(req).then((r) => r || fetch(req)));
   }
+});
+
+// ===== Notificações (avisos de novas solicitações) =====
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { corpo: e.data && e.data.text() }; }
+  e.waitUntil(
+    self.registration.showNotification(d.titulo || "Motocólatras", {
+      body: d.corpo || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: d.tag || undefined,
+      renotify: !!d.tag,
+      vibrate: [200, 100, 200],
+      data: { url: d.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      for (const c of lista) {
+        if ("focus" in c) { c.navigate(url); return c.focus(); }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });

@@ -161,6 +161,17 @@ CREATE TABLE IF NOT EXISTS reservas_sede (
 -- Só uma reserva ativa por dia
 CREATE UNIQUE INDEX IF NOT EXISTS reserva_sede_dia_unico ON reservas_sede (data) WHERE status = 'confirmada';
 
+-- ===== Versão 6: notificações no celular (Web Push) =====
+CREATE TABLE IF NOT EXISTS push_inscricoes (
+  id          SERIAL PRIMARY KEY,
+  usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  endpoint    TEXT NOT NULL UNIQUE,
+  p256dh      TEXT NOT NULL,
+  auth        TEXT NOT NULL,
+  aparelho    TEXT,
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Segurança (Supabase): liga RLS sem políticas, bloqueando o acesso às tabelas pela
 -- API pública do Supabase (chave anon). O sistema conecta direto como dono das
 -- tabelas e por isso continua com acesso normal.
@@ -175,3 +186,4 @@ ALTER TABLE solicitacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitacao_itens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arquivos      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reservas_sede ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_inscricoes ENABLE ROW LEVEL SECURITY;

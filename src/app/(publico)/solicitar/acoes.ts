@@ -5,6 +5,7 @@ import { randomInt } from "node:crypto";
 import { query, queryOne, transacao } from "@/lib/db";
 import { txt, comMsg, soDigitos, cpfValido, formatarCPF } from "@/lib/formato";
 import { enviarAviso, urlDoSite } from "@/lib/notificar";
+import { enviarPush } from "@/lib/push";
 import { TIPOS_ARQUIVO, MAX_ARQUIVO, MAX_TOTAL, detectarMime, type TipoArquivo } from "@/lib/arquivos";
 
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I
@@ -99,14 +100,22 @@ export async function enviarSolicitacao(fd: FormData) {
          FROM solicitacoes s JOIN solicitacao_itens i ON i.solicitacao_id=s.id JOIN equipamentos q ON q.id=i.equipamento_id
         WHERE s.protocolo=$1 GROUP BY s.id`, [protocolo]);
     const site = await urlDoSite();
-    await enviarAviso(
+    await Promise.all([
+      enviarPush({
+        titulo: "🏍️ Nova solicitação de empréstimo",
+        corpo: `${nome} · ${info?.itens ?? ""}`.slice(0, 180),
+        url: info ? `/solicitacoes/${info.id}` : "/solicitacoes",
+        tag: `solic-${protocolo}`,
+      }).catch((e) => console.error("Push não enviado:", e)),
+      enviarAviso(
       `🏍️ Nova solicitação de empréstimo\n` +
       `Protocolo: ${protocolo}\n` +
       `Nome: ${nome}\n` +
       `Telefone: ${telefone}\n` +
       `Itens: ${info?.itens ?? "-"}` +
       (site && info ? `\n\nAnalisar: ${site}/solicitacoes/${info.id}` : "")
-    );
+      ),
+    ]);
   } catch (e) {
     console.error("Aviso de nova solicitação não enviado:", e);
   }

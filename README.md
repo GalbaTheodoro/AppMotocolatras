@@ -59,6 +59,11 @@ npm run dev                  # http://localhost:3000
 - Página **/acompanhar**: consulta a situação com protocolo + CPF e vê a mensagem da equipe.
 - No sistema, menu **Solicitações**: mostra se o CPF já é cadastrado (e se tem atrasos), a disponibilidade de cada item e permite **aprovar** (cria/usa o cadastro da pessoa e registra os empréstimos) ou **recusar** com mensagem.
 
+## Notificações no celular (grátis)
+- No menu lateral, o **administrador** toca em **🔔 Receber avisos neste celular** (de preferência pelo app instalado). A cada nova solicitação chega uma notificação; tocando nela abre a solicitação.
+- Android/Windows/Mac: funciona no Chrome/Edge. iPhone: só pelo app instalado na Tela de Início (iOS 16.4+).
+- As chaves de envio são criadas automaticamente na primeira vez (ou use as variáveis VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY).
+
 ## Avisos de novas solicitações (grátis)
 - Em **Configurações → Avisos**: WhatsApp via CallMeBot (cada pessoa ativa o próprio número e recebe uma apikey) e/ou Telegram via bot próprio (@BotFather).
 - Botões **Enviar mensagem de teste** e **Descobrir chat id**. Se o aviso falhar, a solicitação é salva normalmente.

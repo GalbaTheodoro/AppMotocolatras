@@ -4,6 +4,8 @@ import { queryOne } from "@/lib/db";
 import type { Usuario } from "@/lib/auth";
 import { sair } from "@/app/(publico)/acoes";
 import InstalarApp from "@/components/InstalarApp";
+import AtivarNotificacoes from "@/components/AtivarNotificacoes";
+import { chavesVapid } from "@/lib/push";
 
 const NOME_PAPEL = { admin: "Administrador", operador: "Operador", integrante: "Integrante" } as const;
 
@@ -13,6 +15,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
   const pend = equipe
     ? await queryOne<{ n: number }>("SELECT count(*)::int n FROM solicitacoes WHERE status='pendente'").catch(() => null)
     : null;
+  const chave = u.papel === "admin" ? await chavesVapid().then((k) => k.publica).catch(() => null) : null;
   return (
     <aside className="side">
       <Link href={equipe ? "/" : "/sede"} className="marca">
@@ -56,6 +59,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
           <button type="submit">Sair</button>
         </form>
         <InstalarApp variante="escuro" />
+        {chave && <AtivarNotificacoes chavePublica={chave} />}
       </div>
     </aside>
   );
