@@ -98,3 +98,9 @@ Se o banco já existia, rode **de novo** o `db/schema.sql` no SQL Editor do Supa
 | Receber / desfazer recebimento | ✔ | ✔ |
 | Excluir registros, isentar mensalidade | | ✔ |
 | Usuários e configurações | | ✔ |
+
+## Links de cadastro (auto-cadastro)
+Em **Usuários → Links de cadastro** há um link para cada perfil (Integrante, Operador, Administrador).
+Quem abre o link preenche login, senha e a ficha completa, e o acesso é liberado na hora.
+Os administradores recebem aviso no celular a cada novo cadastro. "Gerar novo link" invalida o anterior.
+Não precisa rodar SQL: os códigos ficam na tabela `configuracoes` (chaves `convite_*`).

@@ -3,7 +3,17 @@ import { query } from "@/lib/db";
 import { exigirAdmin } from "@/lib/auth";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
-import { criarUsuario, atualizarUsuario } from "./acoes";
+import BotaoConfirmar from "@/components/BotaoConfirmar";
+import LinkCadastro from "@/components/LinkCadastro";
+import { lerConvites, PAPEIS_CONVITE, NOME_PAPEL } from "@/lib/convites";
+import { urlDoSite } from "@/lib/notificar";
+import { criarUsuario, atualizarUsuario, trocarLinkCadastro } from "./acoes";
+
+/** Endereço oficial do site (domínio de produção), para os links de cadastro */
+async function siteOficial() {
+  const prod = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return prod ? `https://${prod}` : await urlDoSite();
+}
 
 const PAPEIS = (
   <>
@@ -23,10 +33,32 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
        FROM usuarios u LEFT JOIN usuario_ficha f ON f.usuario_id=u.id
       WHERE ($1 = '' OR u.papel = $1) ORDER BY u.papel <> 'admin', u.papel <> 'operador', u.nome`,
     [filtro]);
+  const [convites, site] = await Promise.all([lerConvites(), siteOficial()]);
   return (
     <>
       <div className="head"><div><h1>Usuários</h1><p className="sub">Quem pode acessar o sistema</p></div></div>
       <Mensagem sp={sp} />
+      <div className="card">
+        <h2>Links de cadastro</h2>
+        <p className="sub" style={{ marginBottom: 12 }}>
+          Envie o link do perfil certo para cada pessoa. Ela mesma preenche login, senha e a ficha completa
+          (dados pessoais, esposa e filhos), e o acesso já fica liberado. Você recebe um aviso no celular a cada novo cadastro.
+          <br /><b>Atenção:</b> quem tiver o link de <b>Administrador</b> ganha acesso total — envie só para quem deve ter.
+          Se um link vazar, clique em <b>Gerar novo link</b>: o anterior para de funcionar na hora.
+        </p>
+        {PAPEIS_CONVITE.map((p) => (
+          <div key={p} style={{ padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+            <div className="acoes" style={{ justifyContent: "space-between", marginBottom: 6 }}>
+              <b>{NOME_PAPEL[p]}</b>
+              <form action={trocarLinkCadastro}>
+                <input type="hidden" name="papel" value={p} />
+                <BotaoConfirmar className="btn sec peq" mensagem={`Gerar um novo link de ${NOME_PAPEL[p]}? O link atual deixará de funcionar.`}>Gerar novo link</BotaoConfirmar>
+              </form>
+            </div>
+            <LinkCadastro url={`${site}/cadastro/${convites[p]}`} perfil={NOME_PAPEL[p]} />
+          </div>
+        ))}
+      </div>
       <div className="card">
         <h2>Novo usuário</h2>
         <form className="f" action={criarUsuario}>

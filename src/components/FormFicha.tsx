@@ -1,5 +1,6 @@
 import { ESTADOS_CIVIS, MAX_FILHOS, TIPOS_SANGUINEOS, UFS, idade, type Ficha, type Filho } from "@/lib/ficha";
-import { salvarFicha } from "@/lib/ficha-acoes";
+import { salvarFicha, cadastrarPorConvite } from "@/lib/ficha-acoes";
+import AcessoCadastro from "./AcessoCadastro";
 import FilhosEditor from "./FilhosEditor";
 import CampoCEP from "./CampoCEP";
 import CampoCPF from "./CampoCPF";
@@ -9,17 +10,33 @@ type Props = {
   ficha: Ficha;
   filhos: Filho[];
   origem?: "meus-dados" | "admin";
+  /** Cadastro pelo link: a própria pessoa cria login + ficha */
+  convite?: { codigo: string; papel: string };
 };
 
 /** Ficha completa do integrante: dados pessoais, endereço, emergência, moto, cônjuge e filhos */
-export default function FormFicha({ usuario, ficha, filhos, origem = "admin" }: Props) {
+export default function FormFicha({ usuario, ficha, filhos, origem = "admin", convite }: Props) {
   const f = (k: string) => (ficha[k] as string | null) ?? "";
   const hoje = new Date().toISOString().slice(0, 10);
   const idadeTit = idade(f("data_nascimento"));
   return (
-    <form id="form-ficha" action={salvarFicha}>
-      <input type="hidden" name="usuario_id" value={usuario.id} />
-      <input type="hidden" name="origem" value={origem} />
+    <form id="form-ficha" action={convite ? cadastrarPorConvite : salvarFicha}>
+      {convite ? (
+        <>
+          <input type="hidden" name="convite" value={convite.codigo} />
+          <div className="hp" aria-hidden="true"><label>Site<input name="site" tabIndex={-1} autoComplete="off" /></label></div>
+          <div className="card">
+            <h2>Acesso ao sistema</h2>
+            <p className="sub" style={{ marginBottom: 10 }}>Perfil: <b>{convite.papel}</b>. Use este e-mail e senha para entrar depois.</p>
+            <AcessoCadastro />
+          </div>
+        </>
+      ) : (
+        <>
+          <input type="hidden" name="usuario_id" value={usuario.id} />
+          <input type="hidden" name="origem" value={origem} />
+        </>
+      )}
 
       <div className="card">
         <h2>Dados pessoais</h2>
@@ -42,8 +59,8 @@ export default function FormFicha({ usuario, ficha, filhos, origem = "admin" }: 
             </select>
           </label>
           <label>Profissão<input name="profissao" defaultValue={f("profissao")} /></label>
-          <label>Telefone / WhatsApp<input name="telefone" defaultValue={usuario.telefone ?? ""} inputMode="tel" /></label>
-          <label>E-mail (login)<input value={usuario.email} disabled /></label>
+          <label>Telefone / WhatsApp{convite ? " *" : ""}<input name="telefone" defaultValue={usuario.telefone ?? ""} inputMode="tel" required={!!convite} /></label>
+          {!convite && <label>E-mail (login)<input value={usuario.email} disabled /></label>}
         </div>
       </div>
 
@@ -94,7 +111,7 @@ export default function FormFicha({ usuario, ficha, filhos, origem = "admin" }: 
         <p className="sub" style={{ fontSize: ".8rem" }}>
           Dados usados apenas pelo Motocólatras MC para cadastro dos integrantes e contato em caso de emergência (LGPD).
         </p>
-        <div className="acoes"><button className="btn" type="submit">Salvar ficha</button></div>
+        <div className="acoes"><button className="btn" type="submit">{convite ? "Concluir cadastro" : "Salvar ficha"}</button></div>
       </div>
     </form>
   );

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { query, queryOne } from "@/lib/db";
 import { exigirAdmin, exigirLogado } from "@/lib/auth";
 import { txt, comMsg } from "@/lib/formato";
+import { trocarConvite } from "@/lib/convites";
 
 function lerPapel(fd: FormData) {
   const p = fd.get("papel");
@@ -60,4 +61,13 @@ export async function trocarMinhaSenha(fd: FormData) {
   if (nova.length < 6) redirect(comMsg(conta, "erro", "A nova senha precisa ter pelo menos 6 caracteres"));
   await query("UPDATE usuarios SET senha_hash=$1 WHERE id=$2", [await bcrypt.hash(nova, 10), eu.id]);
   redirect(comMsg(conta, "ok", "Senha alterada"));
+}
+
+/** Gera um link de cadastro novo para o perfil (o link antigo deixa de funcionar) */
+export async function trocarLinkCadastro(fd: FormData) {
+  await exigirAdmin();
+  const p = fd.get("papel");
+  if (p !== "admin" && p !== "operador" && p !== "integrante") redirect("/usuarios");
+  await trocarConvite(p);
+  redirect(comMsg("/usuarios", "ok", "Novo link gerado. O link anterior não funciona mais."));
 }
