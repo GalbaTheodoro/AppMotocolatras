@@ -262,3 +262,30 @@ details.evento > summary::-webkit-details-marker, details > summary.btn::-webkit
 details > summary.btn { list-style: none; cursor: pointer; }
 tr.destaque td { background: var(--warn-bg); }
 @media (max-width: 640px) { .cal-dia .marcas { font-size: .62rem; } }
+
+/* Reuniões: pauta, ata, decisões e tarefas */
+.abas-reuniao { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 6px 0; }
+.abas-reuniao a { padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); font-size: .85rem; font-weight: 600; color: var(--text); text-decoration: none; }
+.abas-reuniao a:hover { border-color: var(--brand-dark); }
+section[id] { scroll-margin-top: 60px; }
+ol.pauta, ol.decisoes { margin: 0 0 6px; padding-left: 22px; }
+ol.pauta > li { padding: 8px 0; border-bottom: 1px dashed var(--border); }
+ol.pauta > li.discutido b { text-decoration: line-through; text-decoration-color: var(--ok); }
+.pauta-item { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.pauta-item form { display: inline; }
+ol.decisoes > li { margin: 6px 0; }
+.presentes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; margin-top: 6px; }
+.presentes .check { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: .9rem; flex-direction: row; }
+.presentes .check input { width: auto; }
+.tarefas { display: grid; gap: 8px; }
+.tarefa { border: 1px solid var(--border); border-left: 4px solid var(--info); border-radius: 8px; padding: 10px 12px; }
+.tarefa.andamento { border-left-color: var(--warn); }
+.tarefa.concluida { border-left-color: var(--ok); opacity: .8; }
+.tarefa.cancelada { border-left-color: var(--muted); opacity: .6; }
+.tarefa.atrasada { border-left-color: var(--err); background: #fff8f8; }
+.tarefa-topo { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.tarefa.concluida .tarefa-titulo { text-decoration: line-through; }
+.tarefa-acoes > summary { cursor: pointer; margin-top: 6px; font-size: .82rem; }
+.filtros-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filtros-chips .chip { text-decoration: none; }
+@media (max-width: 640px) { .pauta-item { flex-direction: column; } }

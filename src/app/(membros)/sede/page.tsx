@@ -167,6 +167,9 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
                     <span>{TIPOS_EVENTO[e.tipo].icone}</span> <b>{e.titulo}</b>
                     <span className="sub"> · {TIPOS_EVENTO[e.tipo].nome}{e.hora ? ` · ${e.hora}` : ""}{e.na_sede ? " · na sede" : e.local ? ` · ${e.local}` : ""}</span>
                   </summary>
+                  {e.tipo === "reuniao" && (
+                    <p style={{ margin: "8px 0" }}><Link className="btn peq" href={`/reunioes/${e.id}`}>📋 Pauta, ata, decisões e tarefas</Link></p>
+                  )}
                   <dl className="info">
                     {e.local && (<><dt>Local</dt><dd>{e.local}</dd></>)}
                     {e.descricao && (<><dt>Detalhes</dt><dd style={{ whiteSpace: "pre-wrap" }}>{e.descricao}</dd></>)}
@@ -305,7 +308,8 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
               {eventos.map((e) => (
                 <tr key={e.id}>
                   <td>{fmtData(e.data)}{e.hora ? ` · ${e.hora}` : ""}</td>
-                  <td>{TIPOS_EVENTO[e.tipo].icone} <b>{e.titulo}</b> <span className="sub">· {TIPOS_EVENTO[e.tipo].nome}</span></td>
+                  <td>{TIPOS_EVENTO[e.tipo].icone} <b>{e.titulo}</b> <span className="sub">· {TIPOS_EVENTO[e.tipo].nome}</span>
+                    {e.tipo === "reuniao" && <> · <Link href={`/reunioes/${e.id}`}>pauta / ata</Link></>}</td>
                   <td>{e.na_sede ? "Sede" : e.local ?? "—"}</td>
                   <td className="r"><Link href={`/sede?m=${mParam}&d=${e.data}#dia`}>Abrir</Link></td>
                 </tr>

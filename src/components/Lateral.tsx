@@ -15,6 +15,8 @@ export default async function Lateral({ u }: { u: Usuario }) {
   const pend = equipe
     ? await queryOne<{ n: number }>("SELECT count(*)::int n FROM solicitacoes WHERE status='pendente'").catch(() => null)
     : null;
+  const tar = await queryOne<{ n: number }>(
+    "SELECT count(*)::int n FROM tarefas WHERE responsavel_id=$1 AND status IN ('pendente','andamento')", [u.id]).catch(() => null);
   const chave = u.papel === "admin" ? await chavesVapid().then((k) => k.publica).catch(() => null) : null;
   return (
     <aside className="side">
@@ -37,6 +39,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
             <NavLink href="/mensalidades">Mensalidades</NavLink>
             <div className="sep">Agenda</div>
             <NavLink href="/sede">Agenda do clube</NavLink>
+            <NavLink href="/tarefas">Tarefas{tar && tar.n > 0 ? <span className="badge">{tar.n}</span> : null}</NavLink>
             {u.papel === "admin" && (
               <>
                 <div className="sep">Administração</div>
@@ -49,6 +52,7 @@ export default async function Lateral({ u }: { u: Usuario }) {
           <>
             <div className="sep">Agenda</div>
             <NavLink href="/sede">Agenda do clube</NavLink>
+            <NavLink href="/tarefas">Tarefas{tar && tar.n > 0 ? <span className="badge">{tar.n}</span> : null}</NavLink>
           </>
         )}
       </nav>

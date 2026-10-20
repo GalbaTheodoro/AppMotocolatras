@@ -115,3 +115,13 @@ A antiga "Agenda da sede" virou **Agenda do clube**:
 ## Solicitação já cadastra a pessoa
 Toda solicitação pública cria (ou atualiza, pelo CPF) o cadastro em **Pessoas**, com os documentos enviados.
 O cadastro da pessoa mostra o histórico de solicitações. Rodar o `db/schema.sql` cadastra também as solicitações antigas.
+
+## Reuniões: pauta, ata, decisões e tarefas
+Ao marcar um evento do tipo **Reunião** na agenda, abre-se a página da reunião (`/reunioes/[id]`) com:
+1. **Pauta** — qualquer integrante sugere assuntos; o organizador (equipe ou quem marcou) ordena e marca como discutido.
+2. **Ata** — horário, presentes (lista de integrantes), convidados, relato, secretário e situação (rascunho/finalizada).
+   Botão **Imprimir ata** gera o documento com campos de assinatura (`/ata/[id]`).
+3. **Decisões** — lista do que foi decidido.
+4. **Tarefas** — o que foi passado, para quem e com qual prazo. O responsável recebe aviso no celular e atualiza a situação
+   (a fazer, em andamento, concluída, cancelada). Todas as tarefas do clube ficam no menu **Tarefas** (filtros: minhas, atrasadas…).
+Rodar de novo o `db/schema.sql` no Supabase (cria reuniao_pauta, reuniao_ata, reuniao_decisoes e tarefas).

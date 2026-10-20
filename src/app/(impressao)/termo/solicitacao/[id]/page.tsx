@@ -1,9 +1,11 @@
+import { exigirUsuario } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { query, queryOne } from "@/lib/db";
 import { lerConfig } from "@/lib/config";
 import Termo from "@/components/Termo";
 
 export default async function TermoSolicitacao({ params }: { params: Promise<{ id: string }> }) {
+  await exigirUsuario();
   const { id } = await params;
   const s = await queryOne("SELECT * FROM solicitacoes WHERE id=$1 AND status='aprovada'", [Number(id) || 0]);
   if (!s) notFound();

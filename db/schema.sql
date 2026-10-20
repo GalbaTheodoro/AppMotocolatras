@@ -259,3 +259,61 @@ UPDATE solicitacoes s SET pessoa_id = p.id
    AND p.id = (SELECT min(id) FROM pessoas x WHERE regexp_replace(coalesce(x.cpf,''),'\D','','g') = regexp_replace(s.cpf,'\D','','g'));
 UPDATE arquivos a SET pessoa_id = s.pessoa_id
   FROM solicitacoes s WHERE a.solicitacao_id = s.id AND a.pessoa_id IS NULL AND s.pessoa_id IS NOT NULL;
+
+-- ===== Versão 10: reuniões — pauta, ata, decisões e tarefas =====
+CREATE TABLE IF NOT EXISTS reuniao_pauta (
+  id          SERIAL PRIMARY KEY,
+  evento_id   INTEGER NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+  ordem       INTEGER NOT NULL DEFAULT 0,
+  titulo      TEXT NOT NULL,
+  descricao   TEXT,
+  discutido   BOOLEAN NOT NULL DEFAULT FALSE,
+  criado_por  INTEGER REFERENCES usuarios(id),
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reuniao_pauta_evento ON reuniao_pauta (evento_id, ordem);
+
+CREATE TABLE IF NOT EXISTS reuniao_ata (
+  evento_id       INTEGER PRIMARY KEY REFERENCES eventos(id) ON DELETE CASCADE,
+  hora_inicio     TEXT,
+  hora_fim        TEXT,
+  presentes       INTEGER[] NOT NULL DEFAULT '{}',   -- ids dos usuários presentes
+  convidados      TEXT,                              -- outros presentes (sem cadastro)
+  texto           TEXT,                              -- relato / discussões
+  secretario      TEXT,
+  aprovada        BOOLEAN NOT NULL DEFAULT FALSE,    -- ata finalizada
+  atualizado_por  INTEGER REFERENCES usuarios(id),
+  atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS reuniao_decisoes (
+  id          SERIAL PRIMARY KEY,
+  evento_id   INTEGER NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+  texto       TEXT NOT NULL,
+  criado_por  INTEGER REFERENCES usuarios(id),
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reuniao_decisoes_evento ON reuniao_decisoes (evento_id);
+
+CREATE TABLE IF NOT EXISTS tarefas (
+  id                SERIAL PRIMARY KEY,
+  evento_id         INTEGER REFERENCES eventos(id) ON DELETE SET NULL,  -- reunião onde foi passada (opcional)
+  titulo            TEXT NOT NULL,
+  descricao         TEXT,
+  responsavel_id    INTEGER REFERENCES usuarios(id),
+  responsavel_nome  TEXT,                                               -- se não tiver login
+  prazo             DATE,
+  status            TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente','andamento','concluida','cancelada')),
+  concluida_em      DATE,
+  observacao        TEXT,
+  criado_por        INTEGER REFERENCES usuarios(id),
+  criado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tarefas_status ON tarefas (status, prazo);
+CREATE INDEX IF NOT EXISTS tarefas_responsavel ON tarefas (responsavel_id);
+CREATE INDEX IF NOT EXISTS tarefas_evento ON tarefas (evento_id);
+
+ALTER TABLE reuniao_pauta    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reuniao_ata      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reuniao_decisoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tarefas          ENABLE ROW LEVEL SECURITY;

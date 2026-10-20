@@ -140,14 +140,16 @@ export async function criarEvento(fd: FormData) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ev.data)) redirect("/sede");
   if (!ev.titulo) redirect(comMsg(volta(ev.data), "erro", "Informe o título do evento"));
   if (!ehEquipe(u) && ev.data < hojeISO()) redirect(comMsg(volta(ev.data), "erro", "Não é possível marcar evento em data que já passou"));
+  let novoId = 0;
   const erro = await transacao(async (q) => {
     if (ev.na_sede) {
       await travarDia(q, ev.data);
       const c = await conflitoSede(q, ev.data);
       if (c) return c;
     }
-    await q(`INSERT INTO eventos (data, hora, tipo, titulo, local, na_sede, descricao, criado_por) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    const [n] = await q<{ id: number }>(`INSERT INTO eventos (data, hora, tipo, titulo, local, na_sede, descricao, criado_por) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
       [ev.data, ev.hora, ev.tipo, ev.titulo, ev.na_sede ? (ev.local ?? "Sede") : ev.local, ev.na_sede, ev.descricao, u.id]);
+    novoId = n.id;
     return null;
   });
   if (erro) redirect(comMsg(volta(ev.data), "erro", erro));
@@ -156,10 +158,12 @@ export async function criarEvento(fd: FormData) {
   await enviarPush({
     titulo: `${t.icone} ${t.nome} marcado(a) na agenda`,
     corpo: `${ev.titulo} · ${d}/${m}/${y}${ev.hora ? " às " + ev.hora : ""}${ev.na_sede ? " · na sede" : ev.local ? " · " + ev.local : ""}`,
-    url: volta(ev.data),
+    url: ev.tipo === "reuniao" ? `/reunioes/${novoId}` : volta(ev.data),
     tag: `evento-${ev.data}-${ev.titulo}`.slice(0, 60),
   }, ["admin", "operador", "integrante"]).catch((e) => console.error("Push não enviado:", e));
   revalidatePath("/sede");
+  // Reunião: já abre a página da reunião para montar a pauta
+  if (ev.tipo === "reuniao") redirect(comMsg(`/reunioes/${novoId}`, "ok", "Reunião marcada. Monte a pauta abaixo — os integrantes também podem sugerir assuntos."));
   redirect(comMsg(volta(ev.data), "ok", `${t.nome} marcado(a) na agenda`));
 }
 

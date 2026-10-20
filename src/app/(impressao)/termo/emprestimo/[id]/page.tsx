@@ -1,9 +1,11 @@
+import { exigirUsuario } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { queryOne } from "@/lib/db";
 import { lerConfig } from "@/lib/config";
 import Termo from "@/components/Termo";
 
 export default async function TermoEmprestimo({ params }: { params: Promise<{ id: string }> }) {
+  await exigirUsuario();
   const { id } = await params;
   const e = await queryOne(
     `SELECT e.id, e.quantidade, e.quantidade_inicial, e.data_inicio, e.data_devolucao,
