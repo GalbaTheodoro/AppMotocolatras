@@ -18,7 +18,7 @@ function nomeAparelho() {
 
 type Estado = "carregando" | "sem-suporte" | "ios-instalar" | "bloqueado" | "desligado" | "ligado";
 
-/** Botão para o administrador receber avisos no celular quando chega uma solicitação */
+/** Botão para receber avisos no celular (convites, tarefas e, para o ADM, novas solicitações) */
 export default function AtivarNotificacoes({ chavePublica }: { chavePublica: string }) {
   const [estado, setEstado] = useState<Estado>("carregando");
   const [msg, setMsg] = useState("");

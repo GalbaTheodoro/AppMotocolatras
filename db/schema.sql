@@ -320,3 +320,15 @@ ALTER TABLE tarefas          ENABLE ROW LEVEL SECURITY;
 
 -- ===== Versão 11: transcrição de áudio das reuniões (Grok) =====
 ALTER TABLE reuniao_ata ADD COLUMN IF NOT EXISTS transcricao TEXT;
+
+-- ===== Versão 12: participantes convidados para reuniões/eventos =====
+CREATE TABLE IF NOT EXISTS evento_convidados (
+  evento_id     INTEGER NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
+  usuario_id    INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  resposta      TEXT NOT NULL DEFAULT 'pendente' CHECK (resposta IN ('pendente','sim','nao','talvez')),
+  respondido_em TIMESTAMPTZ,
+  convidado_em  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (evento_id, usuario_id)
+);
+CREATE INDEX IF NOT EXISTS evento_convidados_usuario ON evento_convidados (usuario_id);
+ALTER TABLE evento_convidados ENABLE ROW LEVEL SECURITY;

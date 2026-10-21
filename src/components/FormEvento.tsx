@@ -1,9 +1,11 @@
 import { TIPOS_EVENTO, type Evento } from "@/lib/agenda";
+import EscolherParticipantes from "./EscolherParticipantes";
 
 /** Formulário de evento (criar ou editar). Server component: só HTML + server action. */
 export default function FormEvento({
-  acao, data, ev, botao,
-}: { acao: (fd: FormData) => Promise<void>; data: string; ev?: Evento; botao: string }) {
+  acao, data, ev, botao, pessoas = [], convidados = [],
+}: { acao: (fd: FormData) => Promise<void>; data: string; ev?: Evento; botao: string;
+     pessoas?: { id: number; nome: string; papel: string }[]; convidados?: number[] }) {
   return (
     <form action={acao} className="f">
       {ev && <input type="hidden" name="id" value={ev.id} />}
@@ -22,6 +24,12 @@ export default function FormEvento({
           <option value="sim">Sim — ocupa a sede neste dia</option>
         </select>
       </label>
+      {pessoas.length > 0 && (
+        <div className="full">
+          <b style={{ fontSize: ".9rem" }}>Quem vai participar</b>
+          <EscolherParticipantes pessoas={pessoas} iniciais={convidados} />
+        </div>
+      )}
       <label className="full">Detalhes<textarea name="descricao" defaultValue={ev?.descricao ?? ""} placeholder="Roteiro, o que levar, valor por pessoa…" /></label>
       <div className="full acoes"><button className="btn" type="submit">{botao}</button></div>
     </form>

@@ -68,3 +68,17 @@ export function rotuloAniversario(a: Aniversario) {
   if (a.quem === "filho") return `${a.nome} (filho(a) de ${primeiro(a.de)})`;
   return a.nome;
 }
+
+export type Convidado = { evento_id: number; usuario_id: number; nome: string; resposta: "pendente" | "sim" | "nao" | "talvez" };
+export const RESPOSTAS: Record<Convidado["resposta"], string> = { pendente: "Aguardando", sim: "Vai", nao: "Não vai", talvez: "Talvez" };
+
+/** Convidados de vários eventos de uma vez, agrupados por evento */
+export async function convidadosDe(eventoIds: number[]) {
+  const m = new Map<number, Convidado[]>();
+  if (!eventoIds.length) return m;
+  const rows = await query<Convidado>(
+    `SELECT c.evento_id, c.usuario_id, u.nome, c.resposta FROM evento_convidados c JOIN usuarios u ON u.id=c.usuario_id
+      WHERE c.evento_id = ANY($1::int[]) ORDER BY c.resposta='sim' DESC, u.nome`, [eventoIds]);
+  for (const r of rows) m.set(r.evento_id, [...(m.get(r.evento_id) ?? []), r]);
+  return m;
+}

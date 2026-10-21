@@ -136,3 +136,12 @@ Configurar em **Configurações → Inteligência artificial nas atas**:
 - **Google Gemini (padrão, grátis)**: chave em aistudio.google.com/apikey (ou variável `GEMINI_API_KEY`). Modelo padrão `gemini-3.6-flash`.
 - **Grok (xAI, pago)**: chave em console.x.ai (ou `XAI_API_KEY`). Modelo padrão `grok-4.3`.
 Rodar de novo o `db/schema.sql`.
+
+## Participantes das reuniões (convites com aviso no celular)
+Ao marcar (ou editar) uma reunião/evento, escolha **Quem vai participar** (busca, Todos, Diretoria/equipe).
+- Só os escolhidos recebem a notificação "Você foi convidado(a)"; sem ninguém escolhido, o aviso vai para todos.
+- Cada participante responde **Vou / Talvez / Não vou**; quem marcou recebe aviso de cada resposta.
+- Mudou data, horário ou local: os convidados são avisados. Novos convidados recebem o convite.
+- Na ata, quem confirmou já vem marcado como presente.
+- **Todos os usuários** agora podem ativar "🔔 Receber avisos neste celular" no menu (antes era só o ADM).
+Rodar de novo o `db/schema.sql` (cria `evento_convidados`).

@@ -50,3 +50,14 @@ export async function enviarPush(aviso: Aviso, papeis: string[] = ["admin"], usu
   }));
   return { enviados, falhas };
 }
+
+/** Envia para os aparelhos de uma lista de usuários (ex.: convidados de uma reunião) */
+export async function enviarPushPara(aviso: Aviso, usuarioIds: number[]) {
+  const ids = [...new Set(usuarioIds.filter((n) => Number.isInteger(n) && n > 0))];
+  let enviados = 0, falhas = 0;
+  for (const id of ids) {
+    const r = await enviarPush(aviso, [], id).catch(() => ({ enviados: 0, falhas: 1 }));
+    enviados += r.enviados; falhas += r.falhas;
+  }
+  return { enviados, falhas, pessoas: ids.length };
+}

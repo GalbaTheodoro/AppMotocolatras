@@ -6,7 +6,8 @@ import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
 import FormEvento from "@/components/FormEvento";
-import { eventosEntre, aniversariosEntre, rotuloAniversario, TIPOS_EVENTO, type Evento, type Aniversario } from "@/lib/agenda";
+import Participantes from "@/components/Participantes";
+import { eventosEntre, aniversariosEntre, rotuloAniversario, convidadosDe, TIPOS_EVENTO, type Evento, type Aniversario } from "@/lib/agenda";
 import { reservar, cancelarReserva, salvarReserva, criarEvento, salvarEvento, cancelarEvento } from "./acoes";
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -66,6 +67,10 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
   }
   const eventoSede = eventosSel.find((e) => e.na_sede) ?? null;
   const podeEditarEvento = (e: Evento) => equipe || e.criado_por === u.id;
+  const [convPorEvento, pessoas] = await Promise.all([
+    convidadosDe(eventosSel.map((e) => e.id)),
+    diaSel ? query<{ id: number; nome: string; papel: string }>("SELECT id, nome, papel FROM usuarios WHERE ativo ORDER BY nome") : Promise.resolve([]),
+  ]);
   const integrantes = equipe
     ? await query<{ id: number; nome: string }>("SELECT id, nome FROM usuarios WHERE ativo AND papel='integrante' ORDER BY nome")
     : [];
@@ -170,6 +175,7 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
                   {e.tipo === "reuniao" && (
                     <p style={{ margin: "8px 0" }}><Link className="btn peq" href={`/reunioes/${e.id}`}>📋 Pauta, ata, decisões e tarefas</Link></p>
                   )}
+                  <Participantes eventoId={e.id} convidados={convPorEvento.get(e.id) ?? []} usuarioId={u.id} passado={e.data < hoje} />
                   <dl className="info">
                     {e.local && (<><dt>Local</dt><dd>{e.local}</dd></>)}
                     {e.descricao && (<><dt>Detalhes</dt><dd style={{ whiteSpace: "pre-wrap" }}>{e.descricao}</dd></>)}
@@ -179,7 +185,8 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
                     <>
                       <details style={{ marginTop: 8 }}>
                         <summary className="btn sec peq" style={{ display: "inline-block" }}>Editar</summary>
-                        <div style={{ marginTop: 10 }}><FormEvento acao={salvarEvento} data={e.data} ev={e} botao="Salvar evento" /></div>
+                        <div style={{ marginTop: 10 }}><FormEvento acao={salvarEvento} data={e.data} ev={e} botao="Salvar evento"
+                          pessoas={pessoas} convidados={(convPorEvento.get(e.id) ?? []).map((c) => c.usuario_id)} /></div>
                       </details>
                       <form action={cancelarEvento} style={{ marginTop: 8 }}>
                         <input type="hidden" name="id" value={e.id} />
@@ -272,7 +279,7 @@ export default async function Sede({ searchParams }: { searchParams: Promise<Rec
           {(equipe || diaSel >= hoje) && (
             <details className="bloco-dia">
               <summary className="btn sec" style={{ display: "inline-block" }}>+ Marcar reunião, festa, encontro ou rolê</summary>
-              <div style={{ marginTop: 12 }}><FormEvento acao={criarEvento} data={diaSel} botao="Marcar na agenda" /></div>
+              <div style={{ marginTop: 12 }}><FormEvento acao={criarEvento} data={diaSel} botao="Marcar na agenda" pessoas={pessoas} /></div>
             </details>
           )}
         </div>

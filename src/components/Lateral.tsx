@@ -17,7 +17,8 @@ export default async function Lateral({ u }: { u: Usuario }) {
     : null;
   const tar = await queryOne<{ n: number }>(
     "SELECT count(*)::int n FROM tarefas WHERE responsavel_id=$1 AND status IN ('pendente','andamento')", [u.id]).catch(() => null);
-  const chave = u.papel === "admin" ? await chavesVapid().then((k) => k.publica).catch(() => null) : null;
+  // Todos podem ativar avisos (convites de reunião, tarefas); o ADM também recebe as solicitações
+  const chave = await chavesVapid().then((k) => k.publica).catch(() => null);
   return (
     <aside className="side">
       <Link href={equipe ? "/" : "/sede"} className="marca">

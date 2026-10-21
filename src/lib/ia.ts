@@ -41,7 +41,9 @@ async function erroDaApi(r: Response, nome: string, etapa: string) {
   } catch {
     detalhe = await r.text().catch(() => "");
   }
-  if (r.status === 401 || r.status === 403 || /API key not valid/i.test(String(detalhe))) return `Chave do ${nome} inválida ou sem permissão (${etapa}).`;
+  if (/ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(String(detalhe))) return `O Google recusou este tipo de chave (${etapa}). No AI Studio, abra a chave e marque "Restringir à Gemini API" (Restrict to Gemini API), ou crie outra chave e tente de novo.`;
+  if (/unrestricted/i.test(String(detalhe))) return `O Google exige que a chave seja restrita à Gemini API (${etapa}). No AI Studio, abra a chave e escolha "Restrict to Gemini API only".`;
+  if (r.status === 401 || r.status === 403 || /API key not valid/i.test(String(detalhe))) return `Chave do ${nome} inválida ou sem permissão (${etapa}): ${String(detalhe).slice(0, 160)}`;
   if (r.status === 429) return `Limite de uso do ${nome} atingido por agora. Espere alguns minutos e tente de novo (${etapa}).`;
   return `Erro do ${nome} em ${etapa} (${r.status}): ${String(detalhe).slice(0, 200)}`;
 }

@@ -5,6 +5,11 @@ import { data as fmtData } from "@/lib/formato";
 import { lerReuniao, podeGerir, usuariosAtivos } from "@/lib/reunioes";
 import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
+import Participantes from "@/components/Participantes";
+import FormEvento from "@/components/FormEvento";
+import { convidadosDe } from "@/lib/agenda";
+import { salvarEvento } from "../../sede/acoes";
+import { hojeISO } from "@/lib/formato";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
 import { NovaTarefa, ListaTarefas } from "@/components/Tarefas";
 import GravadorAta from "@/components/GravadorAta";
@@ -26,7 +31,9 @@ export default async function Reuniao({
   const { ev, pauta, ata, decisoes, tarefas } = r;
   const gestor = podeGerir(u, ev);
   const [usuarios, ia] = await Promise.all([usuariosAtivos(), gestor ? iaConfigurada() : Promise.resolve(null)]);
-  const presentes = new Set(ata?.presentes ?? []);
+  const convidados = (await convidadosDe([ev.id])).get(ev.id) ?? [];
+  // Antes de a ata ser salva, já vem marcado quem confirmou presença
+  const presentes = new Set(ata ? ata.presentes : convidados.filter((c) => c.resposta === "sim").map((c) => c.usuario_id));
   const [y, m, d] = ev.data.split("-").map(Number);
   const diaSemana = DIA_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const abertas = tarefas.filter((t) => t.status === "pendente" || t.status === "andamento").length;
@@ -47,6 +54,20 @@ export default async function Reuniao({
         </div>
       </div>
       <Mensagem sp={sp} />
+
+      <section className="card" id="participantes">
+        <h2>👥 Participantes</h2>
+        <Participantes eventoId={ev.id} convidados={convidados} usuarioId={u.id} volta="reuniao" passado={ev.data < hojeISO()} />
+        {gestor && (
+          <details className="bloco-dia">
+            <summary className="btn sec peq" style={{ display: "inline-block" }}>✏️ Editar reunião e participantes</summary>
+            <div style={{ marginTop: 10 }}>
+              <FormEvento acao={salvarEvento} data={ev.data} ev={ev} botao="Salvar e avisar novos participantes"
+                pessoas={usuarios} convidados={convidados.map((c) => c.usuario_id)} />
+            </div>
+          </details>
+        )}
+      </section>
 
       <nav className="abas-reuniao">
         <a href="#pauta">Pauta ({pauta.length})</a>

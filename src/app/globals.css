@@ -308,3 +308,11 @@ ul.partes { margin: 8px 0 0; padding-left: 18px; font-size: .85rem; }
 @media (max-width: 640px) { .tarefa-sug { flex-wrap: wrap; } .tarefa-sug input[type=date] { flex: 1 1 140px; } }
 .ia-bloco { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
 .ia-bloco > summary { cursor: pointer; }
+
+/* Participantes / convites */
+.chips-participantes { display: flex; flex-wrap: wrap; gap: 6px; }
+.part { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: .85rem; background: var(--card); }
+.part.sim { border-color: #b7dfc0; }
+.part.nao { opacity: .7; }
+.resposta-convite { margin-top: 10px; gap: 6px; flex-wrap: wrap; align-items: center; }
+.participantes { border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-top: 4px; }

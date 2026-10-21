@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { query, queryOne, transacao } from "@/lib/db";
 import { TIPOS_EVENTO, type TipoEvento } from "@/lib/agenda";
-import { enviarPush } from "@/lib/push";
+import { enviarPush, enviarPushPara } from "@/lib/push";
 import { exigirLogado, exigirUsuario, ehEquipe } from "@/lib/auth";
 import { txt, comMsg, hojeISO } from "@/lib/formato";
 
@@ -111,6 +111,16 @@ export async function salvarReserva(fd: FormData) {
 
 // ===== Eventos do clube (reunião, festa, encontro, rolê) =====
 
+/** Ids dos participantes escolhidos no formulário (campos "convidado") */
+function lerConvidados(fd: FormData) {
+  return [...new Set(fd.getAll("convidado").map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+}
+
+function descreverEvento(ev: { data: string; hora: string | null; na_sede: boolean; local: string | null; titulo: string | null }) {
+  const [y, m, d] = ev.data.split("-");
+  return `${ev.titulo} · ${d}/${m}/${y}${ev.hora ? " às " + ev.hora : ""}${ev.na_sede ? " · na sede" : ev.local ? " · " + ev.local : ""}`;
+}
+
 function lerEvento(fd: FormData) {
   const tipo = String(fd.get("tipo")) as TipoEvento;
   const hora = txt(fd, "hora");
@@ -137,6 +147,7 @@ async function conflitoSede(q: Q, data: string, ignorarEvento = 0) {
 export async function criarEvento(fd: FormData) {
   const u = await exigirLogado();
   const ev = lerEvento(fd);
+  const convidados = lerConvidados(fd);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ev.data)) redirect("/sede");
   if (!ev.titulo) redirect(comMsg(volta(ev.data), "erro", "Informe o título do evento"));
   if (!ehEquipe(u) && ev.data < hojeISO()) redirect(comMsg(volta(ev.data), "erro", "Não é possível marcar evento em data que já passou"));
@@ -150,26 +161,39 @@ export async function criarEvento(fd: FormData) {
     const [n] = await q<{ id: number }>(`INSERT INTO eventos (data, hora, tipo, titulo, local, na_sede, descricao, criado_por) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
       [ev.data, ev.hora, ev.tipo, ev.titulo, ev.na_sede ? (ev.local ?? "Sede") : ev.local, ev.na_sede, ev.descricao, u.id]);
     novoId = n.id;
+    for (const c of convidados) {
+      await q("INSERT INTO evento_convidados (evento_id, usuario_id, resposta, respondido_em) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",
+        [n.id, c, c === u.id ? "sim" : "pendente", c === u.id ? new Date() : null]);
+    }
     return null;
   });
   if (erro) redirect(comMsg(volta(ev.data), "erro", erro));
   const t = TIPOS_EVENTO[ev.tipo];
-  const [y, m, d] = ev.data.split("-");
-  await enviarPush({
-    titulo: `${t.icone} ${t.nome} marcado(a) na agenda`,
-    corpo: `${ev.titulo} · ${d}/${m}/${y}${ev.hora ? " às " + ev.hora : ""}${ev.na_sede ? " · na sede" : ev.local ? " · " + ev.local : ""}`,
-    url: ev.tipo === "reuniao" ? `/reunioes/${novoId}` : volta(ev.data),
-    tag: `evento-${ev.data}-${ev.titulo}`.slice(0, 60),
-  }, ["admin", "operador", "integrante"]).catch((e) => console.error("Push não enviado:", e));
+  const url = ev.tipo === "reuniao" ? `/reunioes/${novoId}` : volta(ev.data);
+  const tag = `evento-${novoId}`;
+  let avisados = "";
+  if (convidados.length) {
+    // Só os participantes escolhidos recebem o convite
+    const r = await enviarPushPara({
+      titulo: `${t.icone} Você foi convidado(a): ${t.nome.toLowerCase()}`,
+      corpo: `${descreverEvento({ ...ev, local: ev.local })} · convite de ${u.nome.split(" ")[0]}. Toque para confirmar presença.`,
+      url, tag,
+    }, convidados.filter((c) => c !== u.id)).catch(() => ({ enviados: 0, pessoas: 0 }));
+    avisados = ` · convite enviado para ${convidados.length} participante(s)${r.enviados ? "" : " (ninguém com avisos ativos no celular ainda)"}`;
+  } else {
+    await enviarPush({ titulo: `${t.icone} ${t.nome} marcado(a) na agenda`, corpo: descreverEvento(ev), url, tag },
+      ["admin", "operador", "integrante"]).catch((e) => console.error("Push não enviado:", e));
+  }
   revalidatePath("/sede");
   // Reunião: já abre a página da reunião para montar a pauta
-  if (ev.tipo === "reuniao") redirect(comMsg(`/reunioes/${novoId}`, "ok", "Reunião marcada. Monte a pauta abaixo — os integrantes também podem sugerir assuntos."));
-  redirect(comMsg(volta(ev.data), "ok", `${t.nome} marcado(a) na agenda`));
+  if (ev.tipo === "reuniao") redirect(comMsg(`/reunioes/${novoId}`, "ok", `Reunião marcada${avisados}. Monte a pauta abaixo — os integrantes também podem sugerir assuntos.`));
+  redirect(comMsg(volta(ev.data), "ok", `${t.nome} marcado(a) na agenda${avisados}`));
 }
 
 async function eventoEditavel(id: number) {
   const u = await exigirLogado();
-  const e = await queryOne<{ data: string; criado_por: number | null }>("SELECT data, criado_por FROM eventos WHERE id=$1 AND status='ativo'", [id]);
+  const e = await queryOne<{ data: string; hora: string | null; local: string | null; na_sede: boolean; criado_por: number | null }>(
+    "SELECT data, hora, local, na_sede, criado_por FROM eventos WHERE id=$1 AND status='ativo'", [id]);
   if (!e) redirect("/sede");
   if (!ehEquipe(u) && e.criado_por !== u.id) redirect(comMsg(volta(e.data), "erro", "Só quem criou o evento ou a equipe pode alterá-lo"));
   return e;
@@ -178,7 +202,10 @@ async function eventoEditavel(id: number) {
 export async function salvarEvento(fd: FormData) {
   const id = Number(fd.get("id"));
   const atual = await eventoEditavel(id);
+  const u = await exigirLogado();
   const ev = lerEvento(fd);
+  const convidados = lerConvidados(fd);
+  const novos: number[] = [], mantidos: number[] = [];
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ev.data)) ev.data = atual.data;
   if (!ev.titulo) redirect(comMsg(volta(atual.data), "erro", "Informe o título do evento"));
   const erro = await transacao(async (q) => {
@@ -189,11 +216,36 @@ export async function salvarEvento(fd: FormData) {
     }
     await q(`UPDATE eventos SET data=$1, hora=$2, tipo=$3, titulo=$4, local=$5, na_sede=$6, descricao=$7 WHERE id=$8`,
       [ev.data, ev.hora, ev.tipo, ev.titulo, ev.local, ev.na_sede, ev.descricao, id]);
+    if (fd.get("tem_convidados")) {
+      const antes = new Set((await q<{ usuario_id: number }>("SELECT usuario_id FROM evento_convidados WHERE evento_id=$1", [id])).map((r) => r.usuario_id));
+      await q("DELETE FROM evento_convidados WHERE evento_id=$1 AND NOT (usuario_id = ANY($2::int[]))", [id, convidados]);
+      for (const c of convidados) {
+        await q("INSERT INTO evento_convidados (evento_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", [id, c]);
+        if (!antes.has(c)) novos.push(c);
+        else mantidos.push(c);
+      }
+    }
     return null;
   });
   if (erro) redirect(comMsg(volta(atual.data), "erro", erro));
+  const t = TIPOS_EVENTO[ev.tipo];
+  const url = ev.tipo === "reuniao" ? `/reunioes/${id}` : volta(ev.data);
+  const outros = (ids: number[]) => ids.filter((c) => c !== u.id);
+  if (novos.length) {
+    await enviarPushPara({
+      titulo: `${t.icone} Você foi convidado(a): ${t.nome.toLowerCase()}`,
+      corpo: `${descreverEvento(ev)} · convite de ${u.nome.split(" ")[0]}. Toque para confirmar presença.`, url, tag: `evento-${id}`,
+    }, outros(novos)).catch(() => null);
+  }
+  // Mudou data, horário ou local: avisa quem já estava convidado
+  const mudou = ev.data !== atual.data || ev.hora !== atual.hora || ev.local !== atual.local || ev.na_sede !== atual.na_sede;
+  if (mudou && mantidos.length) {
+    await enviarPushPara({ titulo: `⚠️ ${t.nome} alterado(a)`, corpo: `Nova data/local: ${descreverEvento(ev)}`, url, tag: `evento-${id}` }, outros(mantidos)).catch(() => null);
+  }
   revalidatePath("/sede");
-  redirect(comMsg(volta(ev.data), "ok", "Evento atualizado"));
+  revalidatePath(`/reunioes/${id}`);
+  redirect(comMsg(ev.tipo === "reuniao" ? `/reunioes/${id}` : volta(ev.data), "ok",
+    `Evento atualizado${novos.length ? ` · convite enviado para ${novos.length} novo(s) participante(s)` : ""}${mudou && mantidos.length ? " · participantes avisados da mudança" : ""}`));
 }
 
 export async function cancelarEvento(fd: FormData) {
@@ -202,4 +254,26 @@ export async function cancelarEvento(fd: FormData) {
   await query("UPDATE eventos SET status='cancelado' WHERE id=$1", [id]);
   revalidatePath("/sede");
   redirect(comMsg(volta(e.data), "ok", "Evento removido da agenda"));
+}
+
+/** Participante responde ao convite: vai, não vai ou talvez */
+export async function responderConvite(fd: FormData) {
+  const u = await exigirLogado();
+  const id = Number(fd.get("evento_id"));
+  const resposta = ["sim", "nao", "talvez"].includes(String(fd.get("resposta"))) ? String(fd.get("resposta")) : "sim";
+  const ev = await queryOne<{ id: number; tipo: TipoEvento; titulo: string; data: string; criado_por: number | null }>(
+    "SELECT id, tipo, titulo, data, criado_por FROM eventos WHERE id=$1 AND status='ativo'", [id]);
+  if (!ev) redirect("/sede");
+  await query(
+    `INSERT INTO evento_convidados (evento_id, usuario_id, resposta, respondido_em) VALUES ($1,$2,$3,now())
+     ON CONFLICT (evento_id, usuario_id) DO UPDATE SET resposta=EXCLUDED.resposta, respondido_em=now()`, [id, u.id, resposta]);
+  const url = ev.tipo === "reuniao" ? `/reunioes/${id}` : volta(ev.data);
+  if (ev.criado_por && ev.criado_por !== u.id) {
+    const txtResp = resposta === "sim" ? "confirmou presença ✅" : resposta === "nao" ? "não vai ❌" : "talvez vá 🤔";
+    await enviarPushPara({ titulo: `${u.nome.split(" ")[0]} ${txtResp}`, corpo: ev.titulo, url, tag: `resp-${id}-${u.id}` }, [ev.criado_por]).catch(() => null);
+  }
+  revalidatePath("/sede");
+  revalidatePath(`/reunioes/${id}`);
+  const volta2 = txt(fd, "volta") === "reuniao" ? `/reunioes/${id}` : volta(ev.data);
+  redirect(comMsg(volta2, "ok", resposta === "sim" ? "Presença confirmada" : resposta === "nao" ? "Resposta registrada: não vai" : "Resposta registrada: talvez"));
 }

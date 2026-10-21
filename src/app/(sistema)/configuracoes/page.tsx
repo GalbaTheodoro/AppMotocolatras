@@ -63,14 +63,14 @@ export default async function Configuracoes({ searchParams }: { searchParams: Pr
             <b>Google Gemini — grátis</b>
             <ol className="sub" style={{ fontSize: ".85rem", margin: "6px 0" }}>
               <li>Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a> e entre com uma conta Google (pode ser a do clube).</li>
-              <li>Clique em <b>Create API key</b> (Criar chave de API) e copie a chave (começa com <code>AIza</code>).</li>
+              <li>Clique em <b>Create API key</b> (Criar chave de API) e copie a chave (começa com <code>AQ.</code> nas chaves novas, ou <code>AIza</code> nas antigas — as duas servem).</li>
               <li>Cole abaixo e clique em <b>Salvar e testar</b>. Não precisa cadastrar cartão.</li>
             </ol>
             <p className="sub" style={{ fontSize: ".78rem", margin: "0 0 6px" }}>
               No plano gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele, e há limite de uso por minuto/dia (suficiente para as reuniões do clube).
             </p>
             <div className="f">
-              <label>Chave do Gemini<input name="gemini_api_key" type="password" autoComplete="off" placeholder={ia.gemini.chave ? "•••••••• (vazio = manter)" : "AIza..."} /></label>
+              <label>Chave do Gemini<input name="gemini_api_key" type="password" autoComplete="off" placeholder={ia.gemini.chave ? "•••••••• (vazio = manter)" : "AQ.... ou AIza..."} /></label>
               <label>Modelo<input name="gemini_modelo" defaultValue={ia.gemini.modelo} placeholder={PROVEDORES.gemini.modelo} /></label>
             </div>
           </div>
