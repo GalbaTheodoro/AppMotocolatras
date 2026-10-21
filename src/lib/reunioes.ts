@@ -13,7 +13,7 @@ export const TAG_TAREFA: Record<string, string> = {
 export type ItemPauta = { id: number; ordem: number; titulo: string; descricao: string | null; discutido: boolean; criado_por: number | null; autor: string | null };
 export type Ata = {
   hora_inicio: string | null; hora_fim: string | null; presentes: number[]; convidados: string | null;
-  texto: string | null; secretario: string | null; aprovada: boolean; atualizado_em: Date | null; atualizado_por_nome: string | null;
+  texto: string | null; transcricao: string | null; secretario: string | null; aprovada: boolean; atualizado_em: Date | null; atualizado_por_nome: string | null;
 };
 export type Decisao = { id: number; texto: string };
 export type Tarefa = {

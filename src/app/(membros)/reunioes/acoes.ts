@@ -7,6 +7,7 @@ import { exigirLogado, type Usuario } from "@/lib/auth";
 import { txt, comMsg, hojeISO } from "@/lib/formato";
 import { podeGerir, podeAtualizarTarefa } from "@/lib/reunioes";
 import { enviarPush } from "@/lib/push";
+import { resumirReuniao, anexarTranscricao, type ResumoReuniao } from "@/lib/ia";
 
 const pagina = (id: number, aba?: string) => `/reunioes/${id}${aba ? `#${aba}` : ""}`;
 const comAba = (url: string, aba: string) => `${url}#${aba}`;
@@ -201,4 +202,104 @@ export async function editarTarefa(fd: FormData) {
   revalidatePath("/tarefas");
   if (t.evento_id) revalidatePath(`/reunioes/${t.evento_id}`);
   redirect(comAba(comMsg(volta, "ok", "Tarefa alterada"), "tarefas"));
+}
+
+// ===== Gravação, transcrição e resumo com IA (Gemini ou Grok) =====
+
+/** Organizador confere permissão sem redirecionar (para chamadas feitas pelo gravador) */
+async function gestorOuErro(eventoId: number) {
+  const u = await exigirLogado();
+  const ev = await queryOne<{ id: number; titulo: string; data: string; criado_por: number | null }>(
+    "SELECT id, titulo, data, criado_por FROM eventos WHERE id=$1 AND tipo='reuniao' AND status='ativo'", [eventoId]);
+  if (!ev) return { erro: "Reunião não encontrada" } as const;
+  if (!podeGerir(u, ev)) return { erro: "Só quem organiza a reunião pode fazer isto" } as const;
+  return { u, ev } as const;
+}
+
+/** Trecho transcrito ao vivo pelo navegador */
+export async function anexarTextoAoVivo(eventoId: number, texto: string) {
+  const g = await gestorOuErro(eventoId);
+  if ("erro" in g) return { erro: g.erro };
+  await anexarTranscricao(eventoId, texto.slice(0, 200_000), "Ao vivo");
+  return { ok: true };
+}
+
+/** Grava a transcrição inteira (quando a pessoa corrige o texto) */
+export async function salvarTranscricao(eventoId: number, texto: string) {
+  const g = await gestorOuErro(eventoId);
+  if ("erro" in g) return { erro: g.erro };
+  await query(
+    `INSERT INTO reuniao_ata (evento_id, transcricao) VALUES ($1,$2)
+     ON CONFLICT (evento_id) DO UPDATE SET transcricao=EXCLUDED.transcricao`, [eventoId, texto.slice(0, 1_000_000)]);
+  revalidatePath(`/reunioes/${eventoId}`);
+  return { ok: true };
+}
+
+/** Pede à IA o relato, as decisões e as tarefas (a pessoa revisa antes de aplicar) */
+export async function gerarResumo(eventoId: number): Promise<{ erro?: string; resumo?: ResumoReuniao }> {
+  const g = await gestorOuErro(eventoId);
+  if ("erro" in g) return { erro: g.erro };
+  const ata = await queryOne<{ transcricao: string | null; presentes: number[] }>(
+    "SELECT transcricao, presentes FROM reuniao_ata WHERE evento_id=$1", [eventoId]);
+  const transcricao = (ata?.transcricao ?? "").trim();
+  if (transcricao.length < 40) return { erro: "Ainda não há transcrição suficiente. Grave ou envie o áudio da reunião primeiro." };
+  const [pauta, usuarios] = await Promise.all([
+    query<{ titulo: string }>("SELECT titulo FROM reuniao_pauta WHERE evento_id=$1 ORDER BY ordem, id", [eventoId]),
+    query<{ id: number; nome: string }>("SELECT id, nome FROM usuarios WHERE ativo ORDER BY nome"),
+  ]);
+  const ids = new Set(ata?.presentes ?? []);
+  try {
+    const resumo = await resumirReuniao({
+      titulo: g.ev.titulo, data: g.ev.data, hoje: hojeISO(), transcricao,
+      pauta: pauta.map((p) => p.titulo),
+      presentes: usuarios.filter((x) => ids.has(x.id)).map((x) => x.nome),
+      integrantes: usuarios.map((x) => x.nome),
+    });
+    return { resumo };
+  } catch (e) {
+    return { erro: (e as Error).message };
+  }
+}
+
+/** Liga o nome dito na reunião ao cadastro (ignora acentos/maiúsculas; aceita só o primeiro nome se for único) */
+function acharUsuario(nome: string | null, usuarios: { id: number; nome: string }[]) {
+  if (!nome) return null;
+  const n = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const alvo = n(nome);
+  const exato = usuarios.find((x) => n(x.nome) === alvo);
+  if (exato) return exato.id;
+  const parecidos = usuarios.filter((x) => n(x.nome).startsWith(alvo) || n(x.nome).split(" ")[0] === alvo.split(" ")[0]);
+  return parecidos.length === 1 ? parecidos[0].id : null;
+}
+
+/** Aplica o resumo revisado: relato na ata (rascunho) + decisões e tarefas marcadas */
+export async function aplicarResumo(fd: FormData) {
+  const id = Number(fd.get("evento_id"));
+  const { u } = await exigirGestor(id);
+  const relato = txt(fd, "relato");
+  const decisoes = fd.getAll("decisao").map((d) => String(d).trim()).filter(Boolean);
+  const tarefas = fd.getAll("tarefa").map((t) => {
+    try { return JSON.parse(String(t)) as { titulo: string; responsavel: string | null; prazo: string | null }; } catch { return null; }
+  }).filter((t): t is { titulo: string; responsavel: string | null; prazo: string | null } => !!t?.titulo);
+  const usuarios = await query<{ id: number; nome: string }>("SELECT id, nome FROM usuarios WHERE ativo");
+  const avisar: { id: number; titulo: string }[] = [];
+  await transacao(async (q) => {
+    if (relato) {
+      await q(
+        `INSERT INTO reuniao_ata (evento_id, texto, atualizado_por, atualizado_em) VALUES ($1,$2,$3,now())
+         ON CONFLICT (evento_id) DO UPDATE SET texto=EXCLUDED.texto, atualizado_por=EXCLUDED.atualizado_por, atualizado_em=now()`,
+        [id, relato, u.id]);
+    }
+    for (const d of decisoes) await q("INSERT INTO reuniao_decisoes (evento_id, texto, criado_por) VALUES ($1,$2,$3)", [id, d, u.id]);
+    for (const t of tarefas) {
+      const rid = acharUsuario(t.responsavel, usuarios);
+      const prazo = t.prazo && /^\d{4}-\d{2}-\d{2}$/.test(t.prazo) ? t.prazo : null;
+      await q(`INSERT INTO tarefas (evento_id, titulo, responsavel_id, responsavel_nome, prazo, criado_por) VALUES ($1,$2,$3,$4,$5,$6)`,
+        [id, t.titulo.slice(0, 300), rid, rid ? null : t.responsavel, prazo, u.id]);
+      if (rid) avisar.push({ id: rid, titulo: t.titulo });
+    }
+  });
+  for (const a of avisar) await avisarResponsavel(u, a.id, a.titulo, "/tarefas?f=minhas");
+  const partes = [relato && "relato", decisoes.length && `${decisoes.length} decisão(ões)`, tarefas.length && `${tarefas.length} tarefa(s)`].filter(Boolean);
+  fim(id, "ata", partes.length ? `Resumo aplicado: ${partes.join(", ")}. Revise e ajuste o que precisar.` : "Nada foi aplicado");
 }

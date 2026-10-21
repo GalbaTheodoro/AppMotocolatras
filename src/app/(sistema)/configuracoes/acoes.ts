@@ -5,6 +5,7 @@ import { query } from "@/lib/db";
 import { exigirAdmin } from "@/lib/auth";
 import { comMsg, txt } from "@/lib/formato";
 import { enviarAviso, lerConfigAvisos } from "@/lib/notificar";
+import { testarIA, PROVEDORES } from "@/lib/ia";
 
 export async function salvarConfig(fd: FormData) {
   await exigirAdmin();
@@ -89,4 +90,33 @@ export async function descobrirChatsTelegram() {
     if ((e as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) throw e;
     redirect(comMsg("/configuracoes", "erro", "Não foi possível falar com o Telegram agora"));
   }
+}
+
+// ===== Inteligência artificial nas atas (Gemini grátis ou Grok) =====
+
+async function gravar(chave: string, valor: string) {
+  await query("INSERT INTO configuracoes (chave, valor) VALUES ($1,$2) ON CONFLICT (chave) DO UPDATE SET valor=EXCLUDED.valor", [chave, valor]);
+}
+
+export async function salvarIA(fd: FormData) {
+  await exigirAdmin();
+  const volta = (tipo: "ok" | "erro", m: string) => redirect(comMsg("/configuracoes", tipo, m) + "#ia");
+  const remover = txt(fd, "remover");
+  if (remover === "gemini" || remover === "grok") {
+    await query("DELETE FROM configuracoes WHERE chave=$1", [remover === "gemini" ? "gemini_api_key" : "xai_api_key"]);
+    volta("ok", "Chave removida");
+  }
+  const provedor = fd.get("ia_provedor") === "grok" ? "grok" : "gemini";
+  await gravar("ia_provedor", provedor);
+  const gk = txt(fd, "gemini_api_key"); if (gk) await gravar("gemini_api_key", gk);
+  const xk = txt(fd, "xai_api_key"); if (xk) await gravar("xai_api_key", xk);
+  await gravar("gemini_modelo", txt(fd, "gemini_modelo") ?? PROVEDORES.gemini.modelo);
+  await gravar("xai_modelo", txt(fd, "xai_modelo") ?? PROVEDORES.grok.modelo);
+  let msg = "";
+  try {
+    msg = await testarIA();
+  } catch (e) {
+    volta("erro", `Salvo, mas o teste do ${PROVEDORES[provedor].nome} falhou: ${(e as Error).message}`);
+  }
+  volta("ok", `Salvo. Usando ${PROVEDORES[provedor].nome} · teste OK (respondeu "${msg}")`);
 }

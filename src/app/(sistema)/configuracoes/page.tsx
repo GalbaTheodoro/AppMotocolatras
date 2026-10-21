@@ -2,13 +2,15 @@ import { exigirAdmin } from "@/lib/auth";
 import { lerConfig } from "@/lib/config";
 import Mensagem from "@/components/Mensagem";
 import { lerConfigAvisos } from "@/lib/notificar";
-import { salvarConfig, salvarAvisos, testarAvisos, descobrirChatsTelegram } from "./acoes";
+import { salvarConfig, salvarAvisos, testarAvisos, descobrirChatsTelegram, salvarIA } from "./acoes";
+import { configIA, PROVEDORES } from "@/lib/ia";
 
 export default async function Configuracoes({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
   await exigirAdmin();
   const sp = await searchParams;
   const c = await lerConfig();
   const av = await lerConfigAvisos();
+  const ia = await configIA();
   return (
     <>
       <div className="head"><div><h1>Configurações</h1><p className="sub">Regras de cobrança</p></div></div>
@@ -40,6 +42,61 @@ export default async function Configuracoes({ searchParams }: { searchParams: Pr
         </label>
         <div className="full"><button className="btn" type="submit">Salvar</button></div>
       </form>
+
+      <div className="card" id="ia">
+        <h2>Inteligência artificial nas atas</h2>
+        <p className="sub" style={{ marginBottom: 10 }}>
+          Transcreve o áudio das reuniões e gera o resumo, as decisões e as tarefas da ata.
+          Em uso: <b>{PROVEDORES[ia.provedor].nome}</b> — {ia.chave
+            ? <b style={{ color: "var(--ok)" }}>configurado{ia.provedor === "gemini" ? (ia.gemini.daVariavel ? " (variável GEMINI_API_KEY)" : ` (chave …${ia.gemini.chave.slice(-4)})`) : (ia.grok.daVariavel ? " (variável XAI_API_KEY)" : ` (chave …${ia.grok.chave.slice(-4)})`)}</b>
+            : <b style={{ color: "var(--warn)" }}>falta a chave</b>}.
+        </p>
+        <form action={salvarIA} className="f">
+          <label className="full">Usar
+            <select name="ia_provedor" defaultValue={ia.provedor}>
+              <option value="gemini">{PROVEDORES.gemini.nome}</option>
+              <option value="grok">{PROVEDORES.grok.nome}</option>
+            </select>
+          </label>
+
+          <div className="full ia-bloco">
+            <b>Google Gemini — grátis</b>
+            <ol className="sub" style={{ fontSize: ".85rem", margin: "6px 0" }}>
+              <li>Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a> e entre com uma conta Google (pode ser a do clube).</li>
+              <li>Clique em <b>Create API key</b> (Criar chave de API) e copie a chave (começa com <code>AIza</code>).</li>
+              <li>Cole abaixo e clique em <b>Salvar e testar</b>. Não precisa cadastrar cartão.</li>
+            </ol>
+            <p className="sub" style={{ fontSize: ".78rem", margin: "0 0 6px" }}>
+              No plano gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele, e há limite de uso por minuto/dia (suficiente para as reuniões do clube).
+            </p>
+            <div className="f">
+              <label>Chave do Gemini<input name="gemini_api_key" type="password" autoComplete="off" placeholder={ia.gemini.chave ? "•••••••• (vazio = manter)" : "AIza..."} /></label>
+              <label>Modelo<input name="gemini_modelo" defaultValue={ia.gemini.modelo} placeholder={PROVEDORES.gemini.modelo} /></label>
+            </div>
+          </div>
+
+          <details className="full ia-bloco">
+            <summary><b>Grok (xAI) — pago</b> <span className="sub">(opcional)</span></summary>
+            <p className="sub" style={{ fontSize: ".85rem" }}>
+              Crie a chave em <a href="https://console.x.ai" target="_blank" rel="noreferrer">console.x.ai</a> (API Keys) e coloque créditos em Billing. Cobrado por uso.
+            </p>
+            <div className="f">
+              <label>Chave do Grok<input name="xai_api_key" type="password" autoComplete="off" placeholder={ia.grok.chave ? "•••••••• (vazio = manter)" : "xai-..."} /></label>
+              <label>Modelo<input name="xai_modelo" defaultValue={ia.grok.modelo} placeholder={PROVEDORES.grok.modelo} /></label>
+            </div>
+          </details>
+
+          <div className="full acoes"><button className="btn" type="submit">Salvar e testar</button></div>
+        </form>
+        <div className="acoes" style={{ marginTop: 8 }}>
+          {ia.gemini.chave && !ia.gemini.daVariavel && (
+            <form action={salvarIA}><input type="hidden" name="remover" value="gemini" /><button className="btn sec peq" type="submit">Remover chave do Gemini</button></form>
+          )}
+          {ia.grok.chave && !ia.grok.daVariavel && (
+            <form action={salvarIA}><input type="hidden" name="remover" value="grok" /><button className="btn sec peq" type="submit">Remover chave do Grok</button></form>
+          )}
+        </div>
+      </div>
 
       <div className="card" id="avisos">
         <h2>Avisos de novas solicitações (grátis)</h2>

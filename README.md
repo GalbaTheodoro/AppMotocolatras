@@ -125,3 +125,14 @@ Ao marcar um evento do tipo **Reunião** na agenda, abre-se a página da reuniã
 4. **Tarefas** — o que foi passado, para quem e com qual prazo. O responsável recebe aviso no celular e atualiza a situação
    (a fazer, em andamento, concluída, cancelada). Todas as tarefas do clube ficam no menu **Tarefas** (filtros: minhas, atrasadas…).
 Rodar de novo o `db/schema.sql` no Supabase (cria reuniao_pauta, reuniao_ata, reuniao_decisoes e tarefas).
+
+## Gravar a reunião e gerar a ata com IA (Gemini grátis ou Grok)
+Na página da reunião, em **Ata → 🎙️ Gravar a reunião e gerar o resumo com IA**:
+- **Transcrever ao vivo**: o Chrome escreve o que é falado (grátis, não usa a IA).
+- **Gravar áudio**: grava em partes de 8 minutos; cada parte vai para a IA transcrever (`/api/reunioes/[id]/audio`). Dá para baixar cada parte.
+- **Enviar arquivo de áudio**: um áudio já gravado (até 4 MB, ex.: do WhatsApp).
+- **✨ Gerar resumo**: cria o relato (por assunto da pauta), as decisões e as tarefas; você revisa/edita e clica em **Aplicar na ata**.
+Configurar em **Configurações → Inteligência artificial nas atas**:
+- **Google Gemini (padrão, grátis)**: chave em aistudio.google.com/apikey (ou variável `GEMINI_API_KEY`). Modelo padrão `gemini-3.6-flash`.
+- **Grok (xAI, pago)**: chave em console.x.ai (ou `XAI_API_KEY`). Modelo padrão `grok-4.3`.
+Rodar de novo o `db/schema.sql`.

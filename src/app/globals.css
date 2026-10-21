@@ -289,3 +289,22 @@ ol.decisoes > li { margin: 6px 0; }
 .filtros-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .filtros-chips .chip { text-decoration: none; }
 @media (max-width: 640px) { .pauta-item { flex-direction: column; } }
+
+/* Gravador da ata */
+.bloco-gravador { border: 1px dashed var(--brand-dark); background: #fffef0; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
+.bloco-gravador > summary { cursor: pointer; }
+.gravador { margin-top: 10px; }
+.gravador-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.gravando { margin-top: 8px; color: var(--red); font-weight: 600; animation: piscar 1.4s infinite; }
+.gravando .sub { font-weight: 400; animation: none; }
+@keyframes piscar { 50% { opacity: .55; } }
+ul.partes { margin: 8px 0 0; padding-left: 18px; font-size: .85rem; }
+.revisar-resumo { margin-top: 14px; border: 2px solid var(--brand); border-radius: 10px; padding: 12px; background: #fff; display: grid; gap: 8px; }
+.revisar-resumo h3 { margin: 0; }
+.sugestao { display: flex; gap: 6px; align-items: center; }
+.sugestao input[type=checkbox] { width: auto; flex: 0 0 auto; }
+.sugestao input:not([type=checkbox]) { flex: 1 1 auto; min-width: 0; }
+.tarefa-sug input[type=date] { flex: 0 0 150px; }
+@media (max-width: 640px) { .tarefa-sug { flex-wrap: wrap; } .tarefa-sug input[type=date] { flex: 1 1 140px; } }
+.ia-bloco { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.ia-bloco > summary { cursor: pointer; }

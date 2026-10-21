@@ -317,3 +317,6 @@ ALTER TABLE reuniao_pauta    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reuniao_ata      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reuniao_decisoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tarefas          ENABLE ROW LEVEL SECURITY;
+
+-- ===== Versão 11: transcrição de áudio das reuniões (Grok) =====
+ALTER TABLE reuniao_ata ADD COLUMN IF NOT EXISTS transcricao TEXT;

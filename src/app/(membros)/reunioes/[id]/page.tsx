@@ -7,6 +7,8 @@ import Mensagem from "@/components/Mensagem";
 import Tag from "@/components/Tag";
 import BotaoConfirmar from "@/components/BotaoConfirmar";
 import { NovaTarefa, ListaTarefas } from "@/components/Tarefas";
+import GravadorAta from "@/components/GravadorAta";
+import { iaConfigurada } from "@/lib/ia";
 import {
   adicionarPauta, removerPauta, marcarDiscutido, moverPauta, salvarAta, adicionarDecisao, removerDecisao,
 } from "../acoes";
@@ -23,7 +25,7 @@ export default async function Reuniao({
   if (!r) notFound();
   const { ev, pauta, ata, decisoes, tarefas } = r;
   const gestor = podeGerir(u, ev);
-  const usuarios = await usuariosAtivos();
+  const [usuarios, ia] = await Promise.all([usuariosAtivos(), gestor ? iaConfigurada() : Promise.resolve(null)]);
   const presentes = new Set(ata?.presentes ?? []);
   const [y, m, d] = ev.data.split("-").map(Number);
   const diaSemana = DIA_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
@@ -101,8 +103,14 @@ export default async function Reuniao({
       {/* ===== ATA ===== */}
       <section className="card" id="ata">
         <h2>2. Ata da reunião</h2>
+        {gestor && (
+          <details className="bloco-gravador" open={!ata?.texto}>
+            <summary><b>🎙️ Gravar a reunião e gerar o resumo com IA</b></summary>
+            <GravadorAta eventoId={ev.id} transcricaoInicial={ata?.transcricao ?? ""} ia={ia} />
+          </details>
+        )}
         {gestor ? (
-          <form action={salvarAta} className="f">
+          <form action={salvarAta} className="f" key={String(ata?.atualizado_em ?? "nova")}>
             <input type="hidden" name="evento_id" value={ev.id} />
             <label>Início<input name="hora_inicio" type="time" defaultValue={ata?.hora_inicio ?? ev.hora ?? ""} /></label>
             <label>Término<input name="hora_fim" type="time" defaultValue={ata?.hora_fim ?? ""} /></label>
